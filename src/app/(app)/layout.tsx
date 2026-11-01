@@ -1,14 +1,31 @@
 export const dynamic = "force-dynamic";
 
-import { AppHeader } from "@/components/app/app-header";
+import { Sidebar, type SidebarProject } from "@/components/app/sidebar";
 import { requireUser } from "@/lib/supabase/server";
+import { effectiveStatus, type ProjectRow } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user } = await requireUser();
+  const { supabase, user } = await requireUser();
+  const { data } = await supabase
+    .from("projects")
+    .select("id, name, status, status_message, status_updated_at, brand_profiles(profile)")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(15);
+  type Row = Pick<ProjectRow, "id" | "name" | "status" | "status_message" | "status_updated_at"> & { brand_profiles: { profile: { identity?: { primaryColor?: string } } } | null };
+  const projects: SidebarProject[] = ((data ?? []) as unknown as Row[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: effectiveStatus(p).status,
+    color: p.brand_profiles?.profile?.identity?.primaryColor ?? null,
+  }));
+
   return (
-    <div className="min-h-dvh">
-      <AppHeader email={user.email} />
-      <main className="mx-auto max-w-7xl px-5 pb-24 pt-8 sm:px-8">{children}</main>
+    <div className="min-h-dvh bg-[#FAFAFC]">
+      <Sidebar projects={projects} email={user.email ?? null} />
+      <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6">
+        <div className="mx-auto max-w-[1400px]">{children}</div>
+      </main>
     </div>
   );
 }

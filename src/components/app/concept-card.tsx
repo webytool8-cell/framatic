@@ -28,30 +28,31 @@ export function ConceptCard({
   return (
     <article
       style={{ ["--ring" as string]: `var(--color-${meta.accent})` }}
-      className={cn("lift group relative flex flex-col rounded-[var(--radius-card)] border-[1.5px] bg-white p-5", preferred ? cn(accentBorder[meta.accent], "selected-ring") : "border-line hover:border-ink")}
+      className={cn("lift group relative flex flex-col rounded-xl border-[1.5px] bg-white p-4", preferred ? cn(accentBorder[meta.accent], "selected-ring") : "border-line hover:border-ink")}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <span className="flex items-center gap-2">
-          <span className={cn("grid h-8 w-8 place-items-center rounded-lg font-mono text-sm font-bold", SLOT_BG[meta.accent], meta.accent === "violet" || meta.accent === "coral" ? "text-white" : "text-ink")}>{meta.slot}</span>
-          <span className="label-tech">{meta.label}</span>
+          <span className={cn("grid h-7 w-7 place-items-center rounded-md text-sm font-bold", SLOT_BG[meta.accent], meta.accent === "violet" || meta.accent === "coral" ? "text-white" : "text-ink")}>{meta.slot}</span>
+          <span className="text-sm font-medium text-slate">{meta.label}</span>
         </span>
         {preferred && <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">★ Preferred</span>}
       </div>
       {plan && (
-        <div className="mb-4 [container-type:inline-size]">
+        <div className="mb-3 [container-type:inline-size]">
           <StoryboardFrame scene={plan.scenes[0]} plan={{ ...plan, aspectRatio: "16:9" }} index={0} logoUrl={logoUrl} />
         </div>
       )}
-      <h3 className="text-heading mb-1 text-xl">
+      <h3 className="text-heading mb-1 text-lg">
         <Link href={href} className="after:absolute after:inset-0 focus:outline-none">{content.title}</Link>
       </h3>
-      <p className="mb-2 font-semibold text-violet-deep">“{content.headline}”</p>
-      <p className="mb-4 line-clamp-3 text-sm text-slate">{content.description}</p>
+      <p className="mb-1.5 text-sm font-semibold text-violet-deep">“{content.headline}”</p>
+      <p className="mb-3 line-clamp-2 text-sm text-slate">{content.description}</p>
       {plan && <SceneStrip plan={plan} className="mb-3" />}
-      <dl className="mt-auto grid grid-cols-3 gap-2 border-t border-line pt-3 text-xs">
+      <dl className="mt-auto grid grid-cols-4 gap-2 border-t border-line pt-3 text-xs">
         <div><dt className="label-tech">Length</dt><dd className="font-semibold">{Math.round(content.estimatedDurationSec)}s</dd></div>
         <div><dt className="label-tech">Pacing</dt><dd className="font-semibold capitalize">{content.pacing}</dd></div>
         <div><dt className="label-tech">Scenes</dt><dd className="font-semibold">{plan?.scenes.length ?? "—"}</dd></div>
+        <div><dt className="label-tech">Format</dt><dd className="font-semibold">{plan?.aspectRatio ?? "—"}</dd></div>
       </dl>
       {edited > 0 && <p className="mt-2 text-xs text-slate">{edited} field{edited === 1 ? "" : "s"} edited by you</p>}
     </article>

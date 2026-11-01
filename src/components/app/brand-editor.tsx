@@ -181,16 +181,16 @@ export function BrandEditor({ projectId, initial, aiReady = false }: { projectId
   return (
     <div className="pb-28">
       {profile.missing.length > 0 && (
-        <Alert tone="warning" className="mb-6">
+        <Alert tone="warning" className="mb-4">
           <p className="mb-1 font-semibold">A few things need your input</p>
           <ul className="list-disc space-y-0.5 pl-4">{profile.missing.map((m) => <li key={m}>{m}</li>)}</ul>
         </Alert>
       )}
-      <p className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate">
+      <p className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate">
         Labels: <Tag tone="verified">From site</Tag> found verbatim on your website · <Tag tone="inferred">AI interpretation</Tag> our read, not a fact · <Tag tone="user">Yours</Tag> written or edited by you
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard accent="violet" eyebrow="Look" title="Look & feel" >
           <div className="space-y-6">
             <div>
@@ -294,7 +294,7 @@ export function BrandEditor({ projectId, initial, aiReady = false }: { projectId
             More details: tone, messages, CTAs and campaign goal
             <span aria-hidden className="text-slate transition-transform duration-200 group-open:rotate-45">+</span>
           </summary>
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <SectionCard accent="coral" eyebrow="Marketing" title="How you talk">
           <div className="space-y-5">
             <ClaimField label="Brand tone" claim={profile.marketing.tone} placeholder="e.g. Confident, warm, a little cheeky" onChange={(c) => edit((p) => ({ ...p, marketing: { ...p.marketing, tone: c } }))} />
@@ -321,8 +321,8 @@ export function BrandEditor({ projectId, initial, aiReady = false }: { projectId
         </details>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-8">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 backdrop-blur lg:left-60">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <div className="text-sm" aria-live="polite">
             {status ? (
               <span className={status.tone === "error" ? "text-coral-deep" : "text-lime-deep"}>{status.text}</span>

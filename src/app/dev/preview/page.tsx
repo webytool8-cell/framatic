@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import { AppHeader } from "@/components/app/app-header";
+import { Sidebar } from "@/components/app/sidebar";
+import { ProjectTable } from "@/components/app/project-table";
+import { StatusPill } from "@/components/ui/status";
 import { BrandEditor } from "@/components/app/brand-editor";
 import { ConceptCard } from "@/components/app/concept-card";
 import { ConceptWorkspace } from "@/components/app/concept-workspace";
 import { WorkflowTabs } from "@/components/app/workflow-tabs";
-import { ProjectCard } from "@/components/app/project-card";
-import { BrandSummary } from "@/components/app/brand-summary";
+import { BrandStrip } from "@/components/app/brand-summary";
 import { JobRunner } from "@/components/app/job-runner";
 import { Composer } from "@/components/app/composer";
 import { AIBrandAnalysis, assembleProfile } from "@/lib/brand/intelligence";
@@ -49,39 +50,42 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
   });
 
   return (
-    <div>
-      <AppHeader email="preview@framatic.dev" />
-      <main className="mx-auto max-w-7xl px-5 pb-24 pt-8 sm:px-8">
-        <p className="mb-6 rounded-lg bg-butter px-3 py-2 text-sm">Dev preview with fictional sample data — actions are not wired here.</p>
+    <div className="min-h-dvh bg-[#FAFAFC]">
+      <Sidebar email="preview@framatic.dev" projects={[{ id: "demo", name: "Tidyflow launch", status: "concepts_ready", color: "#14B88A" }, { id: "b", name: "Brightmug store", status: "generating", color: "#FF6B6B" }, { id: "c", name: "Agency pitch", status: "analysis_failed", color: null }]} />
+      <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6"><div className="mx-auto max-w-[1400px]">
+        
         {view === "running" && <div className="mx-auto max-w-2xl"><JobRunner projectId="demo" kind="autopilot" status="analyzing" message="Reading your website…" label="" /></div>}
-        {view === "dashboard" && <section className="mb-14 max-w-3xl"><h1 className="text-display mb-6 text-5xl">Make a new ad</h1><Composer size="md" /></section>}
         {view === "dashboard" && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {(["concepts_ready", "analyzing", "analysis_failed"] as const).map((s, i) => (
-              <ProjectCard key={s} p={{ id: String(i), name: ["Tidyflow launch", "Brightmug store", "Agency pitch"][i], website_url: ["https://tidyflow.example", "https://brightmug.example", "https://studio.example"][i], status: s, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), primary: ["#14B88A", "#FF6B6B", null][i], preferred: i === 0 ? "Inbox, sorted." : null }} />
-            ))}
+          <div className="space-y-5">
+            <div><h1 className="text-heading text-2xl">Projects</h1><p className="text-sm text-slate">Paste a website to make a new ad, or pick up where you left off.</p></div>
+            <section className="rounded-xl border border-line bg-white p-4 sm:p-5"><Composer size="md" /></section>
+            <ProjectTable projects={[
+              { id: "demo", name: "Tidyflow launch", website_url: "https://tidyflow.example", status: "concepts_ready", updated_at: new Date(Date.now() - 36e5).toISOString(), primary: "#14B88A", palette: ["#14B88A", "#FF7A1A", "#1B1B1F"], concepts: 3, preferred: "Inbox, sorted." },
+              { id: "b", name: "Brightmug store", website_url: "https://brightmug.example", status: "generating", updated_at: new Date().toISOString(), primary: "#FF6B6B", palette: ["#FF6B6B", "#FFD166"], concepts: 0, preferred: null },
+              { id: "c", name: "Agency pitch", website_url: "https://studio.example", status: "analysis_failed", updated_at: new Date(Date.now() - 864e5 * 2).toISOString(), primary: null, palette: [], concepts: 0, preferred: null },
+            ]} />
           </div>
         )}
         {view !== "dashboard" && view !== "running" && (
-          <div className="mb-8 border-b border-line pb-6">
-            <h1 className="text-display mb-5 text-4xl">Tidyflow launch</h1>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+            <div><p className="mb-0.5 text-xs text-slate">Projects /</p><div className="flex items-center gap-2.5"><h1 className="text-heading text-2xl">Tidyflow launch</h1><StatusPill status="concepts_ready" /><span className="font-mono text-xs text-slate">tidyflow.example ↗</span></div></div>
             <WorkflowTabs projectId="demo" hasBrand />
           </div>
         )}
         {view === "brand" && <BrandEditor projectId="demo" initial={brand} />}
         {view === "concepts" && (
-          <div className="grid gap-8 xl:grid-cols-[1fr_300px]"><div><h2 className="text-heading mb-5 text-3xl">Pick a direction</h2><div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="space-y-4"><BrandStrip projectId="demo" profile={brand} /><div><h2 className="text-heading text-lg">3 concepts</h2><p className="mb-4 text-sm text-slate">Open one to tweak it.</p><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {concepts.map((c, i) => {
               const { scenePlan, ...content } = c;
               return <ConceptCard key={i} href="#" kind={CONCEPT_KINDS[i]} content={content} plan={scenePlan} preferred={i === 0} edited={i === 0 ? 2 : 0} />;
             })}
-          </div></div><BrandSummary projectId="demo" profile={brand} /></div>
+          </div></div></div>
         )}
         {view === "concept" && (() => {
           const { scenePlan, ...content } = concepts[1];
           return <ConceptWorkspace concept={{ id: "demo", kind: "product_in_motion", content, preferences: prefs, editedFields: ["headline"], isPreferred: false, version: 2, plan: scenePlan }} versions={[{ version: 2, source: "user", created_at: new Date().toISOString() }, { version: 1, source: "ai", created_at: new Date().toISOString() }]} logoUrl={null} aiReady />;
         })()}
-      </main>
+      </div></main>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/form";
 import { Arc, Circle } from "@/components/ui/shapes";
-import { BrandSummary } from "@/components/app/brand-summary";
+import { BrandStrip, BrandSummary } from "@/components/app/brand-summary";
 import { ConceptCard } from "@/components/app/concept-card";
 import { JobRunner } from "@/components/app/job-runner";
 import { ManualFallbackButton } from "@/components/app/manual-fallback";
@@ -69,38 +69,36 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   // 4. Results
   return (
-    <div className="grid gap-8 xl:grid-cols-[1fr_300px]">
-      <div>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-heading text-3xl">Pick a direction</h2>
-            <p className="mt-1 text-slate">Open one to tweak it. Each frame is a storyboard sketch, not a rendered video.</p>
-          </div>
-          {aiReady && <JobRunner projectId={id} kind="generate" status={status} label="Try three new ones" variant="secondary" />}
+    <div className="space-y-4">
+      {brand && <BrandStrip projectId={id} profile={brand.profile} />}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-heading text-lg">3 concepts</h2>
+          <p className="text-sm text-slate">Open one to tweak it. Frames are storyboard sketches, not rendered video.</p>
         </div>
-        {message && <Alert tone={status === "generation_failed" ? "error" : "warning"} className="mb-5">{message}</Alert>}
-        {warnings.length > 0 && (
-          <Alert tone="warning" className="mb-5">
-            <ul className="list-disc space-y-1 pl-4">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
-          </Alert>
-        )}
-        <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-          {concepts.map((c) => (
-            <ConceptCard
-              key={c.id}
-              href={`/projects/${id}/concepts/${c.id}`}
-              kind={c.kind}
-              content={c.content}
-              plan={c.scenePlan}
-              preferred={c.is_preferred}
-              edited={c.edited_fields.length}
-              logoUrl={brand?.profile.identity.logoUrl}
-            />
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-slate">“Try three new ones” keeps any lines you&apos;ve edited yourself.</p>
+        {aiReady && <JobRunner projectId={id} kind="generate" status={status} label="Try three new ones" variant="secondary" />}
       </div>
-      {brand && <div className="xl:sticky xl:top-24 xl:self-start"><BrandSummary projectId={id} profile={brand.profile} /></div>}
+      {message && <Alert tone={status === "generation_failed" ? "error" : "warning"}>{message}</Alert>}
+      {warnings.length > 0 && (
+        <Alert tone="warning">
+          <ul className="list-disc space-y-1 pl-4">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+        </Alert>
+      )}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {concepts.map((c) => (
+          <ConceptCard
+            key={c.id}
+            href={`/projects/${id}/concepts/${c.id}`}
+            kind={c.kind}
+            content={c.content}
+            plan={c.scenePlan}
+            preferred={c.is_preferred}
+            edited={c.edited_fields.length}
+            logoUrl={brand?.profile.identity.logoUrl}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-slate">“Try three new ones” keeps any lines you&apos;ve edited yourself.</p>
     </div>
   );
 }

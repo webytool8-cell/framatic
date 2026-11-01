@@ -14,7 +14,7 @@ const map: Record<ProjectStatus, { label: string; dot: string; ring: string; pul
 export function StatusPill({ status, className }: { status: ProjectStatus; className?: string }) {
   const s = map[status] ?? map.draft;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full border-[1.5px] bg-white px-2.5 py-0.5 text-xs font-semibold", s.ring, className)}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] bg-white px-2.5 py-0.5 text-xs font-semibold", s.ring, className)}>
       <span className="relative flex h-2 w-2">
         {s.pulse && <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", s.dot)} />}
         <span className={cn("relative inline-flex h-2 w-2 rounded-full", s.dot)} />

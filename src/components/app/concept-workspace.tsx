@@ -171,10 +171,10 @@ export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props)
   return (
     <div className="pb-24">
       {/* Header */}
-      <div className={cn("mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-card)] border-[1.5px] bg-white p-5", accentBorder[meta.accent])}>
+      <div className={cn("mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border-[1.5px] bg-white p-4", accentBorder[meta.accent])}>
         <div className="min-w-0">
           <p className="text-sm text-slate">Concept {meta.slot} · {meta.label}</p>
-          <h2 className="text-heading truncate text-3xl">{content.title}</h2>
+          <h2 className="text-heading truncate text-2xl">{content.title}</h2>
           <SceneStrip plan={planPreview} className="mt-3 h-2 max-w-md" />
           <p className="mt-2 text-sm text-slate">{planPreview.aspectRatio} · {planPreview.durationSec.toFixed(0)}s · {planPreview.scenes.length} scenes · {content.pacing} · {content.musicMood}</p>
         </div>
@@ -221,7 +221,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props)
         </section>
 
         {/* Right rail: ask + key copy */}
-        <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+        <div className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           {aiReady && (
             <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white p-4 shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="ask-title">
               <h3 id="ask-title" className="text-heading mb-2 text-lg">Ask for changes</h3>

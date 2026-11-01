@@ -23,10 +23,10 @@ export default async function BrandPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-heading text-3xl">Your brand, as we read it</h2>
-          <p className="mt-1 max-w-2xl text-slate">Fix anything that&apos;s off and star the features you want the ads to lead with. Then update your ads.</p>
+          <h2 className="text-heading text-lg">Your brand, as we read it</h2>
+          <p className="max-w-2xl text-sm text-slate">Fix anything that&apos;s off and star the features you want the ads to lead with. Then update your ads.</p>
         </div>
         {(count ?? 0) > 1 && <p className="rounded-full border border-yellow bg-butter px-3 py-1 text-xs font-semibold text-yellow-deep">Shared by {count} projects</p>}
       </div>

@@ -6,9 +6,9 @@ export function BrandSummary({ projectId, profile }: { projectId: string; profil
   const colors = [profile.identity.primaryColor, ...profile.identity.secondaryColors, ...profile.identity.accentColors].slice(0, 5);
   const features = [...profile.product.features].sort((a, b) => Number(b.emphasized) - Number(a.emphasized)).slice(0, 3);
   return (
-    <aside className="rounded-[var(--radius-card)] border-[1.5px] border-line bg-white p-5">
+    <aside className="rounded-xl border border-line bg-white p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-heading text-lg">Built from your brand</h2>
+        <h2 className="text-sm font-semibold">Built from your brand</h2>
         <Link href={`/projects/${projectId}/brand`} className="text-sm font-semibold text-violet-deep hover:underline">Edit</Link>
       </div>
       <div className="mb-4 flex items-center gap-3">
@@ -40,5 +40,36 @@ export function BrandSummary({ projectId, profile }: { projectId: string; profil
         </p>
       )}
     </aside>
+  );
+}
+
+/** One-line horizontal version for the top of the results page. */
+export function BrandStrip({ projectId, profile }: { projectId: string; profile: BrandProfile }) {
+  const colors = [profile.identity.primaryColor, ...profile.identity.secondaryColors, ...profile.identity.accentColors].slice(0, 5);
+  const features = [...profile.product.features].sort((a, b) => Number(b.emphasized) - Number(a.emphasized)).slice(0, 3);
+  return (
+    <section aria-label="Brand" className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border border-line bg-white px-4 py-3 text-sm">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {profile.identity.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.identity.logoUrl} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-md border border-line object-contain p-0.5" />
+        ) : (
+          <span aria-hidden className="h-8 w-8 rounded-md" style={{ background: profile.identity.primaryColor }} />
+        )}
+        <div className="min-w-0">
+          <p className="truncate font-semibold leading-tight">{profile.product.name.value || "Unnamed product"}</p>
+          <p className="truncate text-xs text-slate">{profile.product.category.value || "Category not set"}</p>
+        </div>
+      </div>
+      <div className="flex h-5 w-28 overflow-hidden rounded" aria-label="Brand colors">{colors.map((c, i) => <span key={i} className="flex-1" style={{ background: c }} />)}</div>
+      {profile.identity.typography.heading && <p className="text-xs text-slate">{profile.identity.typography.heading}</p>}
+      <ul className="hidden min-w-0 flex-1 flex-wrap gap-1.5 md:flex">
+        {features.map((f) => <li key={f.id} className="truncate rounded-full bg-ice px-2.5 py-0.5 text-xs">{f.value}</li>)}
+      </ul>
+      <div className="ml-auto flex items-center gap-3">
+        {profile.missing.length > 0 && <span className="rounded-full bg-butter px-2.5 py-0.5 text-xs">{profile.missing.length} to fill in</span>}
+        <Link href={`/projects/${projectId}/brand`} className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold hover:border-ink">Edit brand</Link>
+      </div>
+    </section>
   );
 }

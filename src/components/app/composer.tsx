@@ -40,7 +40,14 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
 
   return (
     <form onSubmit={submit} className="w-full">
-      <div className="rounded-[22px] border-2 border-ink bg-white p-2 shadow-[6px_6px_0_0_#7957FF] transition-shadow duration-200 focus-within:shadow-[8px_8px_0_0_#7957FF]">
+      <div
+        className={cn(
+          "bg-white p-2 transition-[box-shadow,border-color] duration-200",
+          size === "lg"
+            ? "rounded-[22px] border-2 border-ink shadow-[6px_6px_0_0_#7957FF] focus-within:shadow-[8px_8px_0_0_#7957FF]"
+            : "rounded-xl border-[1.5px] border-line-strong focus-within:border-violet focus-within:ring-4 focus-within:ring-lavender",
+        )}
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label htmlFor="composer-url" className="sr-only">Your website</label>
           <input
@@ -54,14 +61,14 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
             autoComplete="url"
             spellCheck={false}
             placeholder="Paste your website URL"
-            className={cn("min-w-0 flex-1 rounded-2xl bg-transparent px-4 font-medium text-ink placeholder:text-slate/70 focus:outline-none focus-visible:outline-none", size === "lg" ? "h-16 text-xl" : "h-14 text-lg")}
+            className={cn("min-w-0 flex-1 rounded-2xl bg-transparent px-4 font-medium text-ink placeholder:text-slate/70 focus:outline-none focus-visible:outline-none", size === "lg" ? "h-16 text-xl" : "h-11 text-base")}
           />
           <button
             type="submit"
             disabled={pending || !url.trim()}
             className={cn(
-              "shrink-0 rounded-2xl bg-violet px-6 font-semibold text-white transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-violet-deep disabled:opacity-50 disabled:hover:translate-y-0",
-              size === "lg" ? "h-14 text-lg" : "h-12",
+              "shrink-0 bg-violet px-5 font-semibold text-white transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-violet-deep disabled:opacity-50 disabled:hover:translate-y-0",
+              size === "lg" ? "h-14 rounded-2xl text-lg" : "h-10 rounded-lg text-sm",
             )}
           >
             {pending ? "Starting…" : "Make my ad"}
@@ -78,16 +85,18 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
         />
       </div>
 
-      <fieldset className="mt-5">
-        <legend className="mb-3 text-sm text-slate">Or start from an idea</legend>
-        <div className="flex flex-wrap gap-2">
+      <fieldset className={size === "lg" ? "mt-5" : "mt-3"}>
+        <legend className={cn("text-slate", size === "lg" ? "mb-3 text-sm" : "mb-2 text-xs")}>{size === "lg" ? "Or start from an idea" : "Starting ideas"}</legend>
+        <div className={cn("flex flex-wrap", size === "lg" ? "gap-2" : "gap-1.5")}>
           {STARTER_IDEAS.map((idea, i) => {
             const on = picked.includes(idea.id);
             return (
               <label
                 key={idea.id}
                 className={cn(
-                  "cursor-pointer select-none rounded-full border-[1.5px] px-4 py-2 text-sm font-medium transition-[background-color,border-color,transform] duration-150 hover:-translate-y-px has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-violet",
+                  "cursor-pointer select-none rounded-full border-[1.5px] font-medium",
+                  size === "lg" ? "px-4 py-2 text-sm" : "px-3 py-1 text-xs",
+                  " transition-[background-color,border-color,transform] duration-150 hover:-translate-y-px has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-violet",
                   on ? CHIP_ON[i % CHIP_ON.length] : "border-line bg-white text-ink hover:border-ink",
                 )}
               >
