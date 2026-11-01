@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Composer } from "@/components/app/composer";
 import { WorkspacePreview } from "@/components/landing/workspace-preview";
-import { SampleReel } from "@/components/landing/sample-reel";
+import { ScenePreview } from "@/components/app/scene-preview";
 import { Logo } from "@/components/ui/shapes";
 import { Tag } from "@/components/ui/status";
-import { samplePlan } from "@/lib/samples";
+import { samplePlan, sampleVerticalPlan } from "@/lib/samples";
 
 function Tile({ title, body, children, className = "", soon = false }: { title: string; body: string; children: React.ReactNode; className?: string; soon?: boolean }) {
   return (
@@ -162,8 +162,8 @@ export default function Landing() {
             </ul>
           </Tile>
 
-          <Tile title="Kinetic type, built in" body="Bold typography, geometric motion and music. Rendering to finished video is coming next." className="lg:row-span-2" soon>
-            <div className="mx-auto max-w-[220px]"><SampleReel compact /></div>
+          <Tile title="Live motion preview" body="Kinetic type, geometric motion and transitions, played straight from the scene plan. MP4 export is coming next." className="lg:row-span-2">
+            <div className="mx-auto max-w-[220px]"><ScenePreview plan={sampleVerticalPlan} productName="Tidyflow" autoPlay controls={false} compact /></div>
           </Tile>
 
           <Tile title="Your brand, saved" body="Fix a color or star a feature once. Every future ad uses it.">

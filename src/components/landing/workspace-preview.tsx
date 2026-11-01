@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { StoryboardFrame } from "@/components/app/storyboard";
+import { useMemo, useState } from "react";
+import { ScenePreview } from "@/components/app/scene-preview";
 import { Tag } from "@/components/ui/status";
 import { cn } from "@/lib/cn";
 import type { ScenePlan } from "@/lib/creative/scene-plan";
@@ -18,8 +18,10 @@ const CONCEPTS = [
 export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
   const [active, setActive] = useState(0);
   const c = CONCEPTS[active];
-  const scenes = plan.scenes.map((s, i) => (i === 0 ? { ...s, headline: active === 0 ? "200 unread." : active === 1 ? "Route. Draft. Send." : "Support should feel human." } : s));
-  const p = { ...plan, scenes };
+  const p = useMemo(() => {
+    const scenes = plan.scenes.map((s, i) => (i === 0 ? { ...s, headline: active === 0 ? "200 unread." : active === 1 ? "Route. Draft. Send." : "Support, but human." } : s));
+    return { ...plan, scenes };
+  }, [plan, active]);
 
   return (
     <figure className="overflow-hidden rounded-2xl border border-line-strong bg-white shadow-[0_30px_60px_-30px_rgba(32,33,36,0.35)]">
@@ -62,16 +64,9 @@ export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
           </div>
           <div className="mb-2 flex items-baseline justify-between gap-2">
             <p className="truncate text-sm font-semibold">{c.title}</p>
-            <p className="shrink-0 font-mono text-[11px] text-slate">16:9 · {p.durationSec.toFixed(0)}s · 4 scenes</p>
+            <p className="shrink-0 font-mono text-[11px] text-slate">16:9 · {p.durationSec.toFixed(0)}s · 4 scenes · live preview</p>
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
-            {p.scenes.map((s, i) => (
-              <div key={s.id} className="[container-type:inline-size]">
-                <StoryboardFrame scene={s} plan={p} index={i} />
-                <p className="mt-1 truncate text-[10px] text-slate">{s.purpose} · {s.durationSec}s</p>
-              </div>
-            ))}
-          </div>
+          <ScenePreview plan={p} productName="Tidyflow" autoPlay controls={false} compact />
           <dl className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">
             {[["Headline", active === 2 ? "Support should feel human." : "Inbox zero, every day"], ["CTA", "Start free trial"], ["Music", active === 2 ? "Warm synth, 96 bpm" : "Upbeat lo-fi, 112 bpm"]].map(([k, v]) => (
               <div key={k} className="min-w-0 rounded-md bg-[#FAFAFC] px-2 py-1.5"><dt className="text-slate">{k}</dt><dd className="truncate font-semibold">{v}</dd></div>

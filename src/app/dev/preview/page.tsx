@@ -16,6 +16,7 @@ import { AIConcept, CONCEPT_KINDS, CreativePreferences } from "@/lib/creative/co
 import { finalizeConcept } from "@/lib/creative/director";
 import type { SiteAnalysis } from "@/lib/analyzer/crawl";
 import { aiBrandFixture, aiConceptFixture, HOME } from "@/lib/dev/sample-data";
+import { samplePlan } from "@/lib/samples";
 
 /**
  * Development-only visual preview of authenticated screens using fictional
@@ -83,7 +84,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
         )}
         {view === "concept" && (() => {
           const { scenePlan, ...content } = concepts[1];
-          return <ConceptWorkspace concept={{ id: "demo", kind: "product_in_motion", content, preferences: prefs, editedFields: ["headline"], isPreferred: false, version: 2, plan: scenePlan }} versions={[{ version: 2, source: "user", created_at: new Date().toISOString() }, { version: 1, source: "ai", created_at: new Date().toISOString() }]} logoUrl={null} aiReady />;
+          return <ConceptWorkspace concept={{ id: "demo", kind: "product_in_motion", content, preferences: prefs, editedFields: ["headline"], isPreferred: false, version: 2, plan: { ...samplePlan, palette: scenePlan.palette } }} versions={[{ version: 2, source: "user", created_at: new Date().toISOString() }, { version: 1, source: "ai", created_at: new Date().toISOString() }]} logoUrl={null} productName="Tidyflow" aiReady />;
         })()}
       </div></main>
     </div>

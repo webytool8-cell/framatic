@@ -7,6 +7,7 @@ import { accentBorder } from "@/components/ui/card";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Tag } from "@/components/ui/status";
 import { PURPOSE_COLOR, SceneStrip, StoryboardFrame } from "@/components/app/storyboard";
+import { ScenePreview } from "@/components/app/scene-preview";
 import { CAMPAIGN_OBJECTIVES } from "@/lib/brand/schema";
 import {
   CONCEPT_META,
@@ -35,6 +36,7 @@ type Props = {
   };
   versions: Array<{ version: number; source: string; created_at: string }>;
   logoUrl: string | null;
+  productName?: string;
   aiReady: boolean;
 };
 
@@ -43,7 +45,7 @@ const LONG: EditableField[] = ["description", "rationale", "supportingCopy", "vi
 const ADVANCED_FIELDS: EditableField[] = ["title", "campaignObjective", "description", "targetAudience", "rationale", "visualDirection", "typographyDirection", "musicMood", "pacing"];
 const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props) {
+export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady }: Props) {
   const router = useRouter();
   const meta = CONCEPT_META[concept.kind];
   const [content, setContent] = useState(concept.content);
@@ -55,6 +57,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props)
   const [ask, setAsk] = useState("");
   const [selected, setSelected] = useState<Set<RegeneratableField>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
+  const [view, setView] = useState<"preview" | "frames">("preview");
   const [notice, setNotice] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [, start] = useTransition();
   const anyDirty = dirtyFields.size > 0 || scenesDirty || prefsDirty;
@@ -186,12 +189,28 @@ export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props)
       {notice && <Alert tone={notice.tone} className="mb-6">{notice.text}</Alert>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* Storyboard */}
+        {/* Preview + storyboard */}
         <section aria-labelledby="sb-title">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 id="sb-title" className="text-heading text-xl">Storyboard</h3>
-            <p className="text-xs text-slate">Sketches, not video. Click any line to edit it.</p>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h3 id="sb-title" className="text-heading text-lg">Storyboard</h3>
+              <div role="tablist" aria-label="View" className="flex rounded-lg border border-line bg-white p-0.5 text-sm">
+                {(["preview", "frames"] as const).map((v) => (
+                  <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cn("rounded-md px-2.5 py-0.5 font-medium transition-colors", view === v ? "bg-ink text-white" : "text-slate hover:text-ink")}>
+                    {v === "preview" ? "▶ Preview" : "Edit scenes"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-slate">{view === "preview" ? "Live animated preview, no sound yet. Video export is coming soon." : "Click any line to edit it."}</p>
           </div>
+          {view === "preview" && (
+            <div className="rounded-xl border border-line bg-white p-3">
+              <ScenePreview plan={planPreview} logoUrl={logoUrl} productName={productName} />
+              {scenesDirty && <p className="mt-2 text-xs text-slate">Showing your unsaved edits.</p>}
+            </div>
+          )}
+          {view === "frames" && (
           <ol className={cn("grid gap-4", planPreview.aspectRatio === "9:16" || planPreview.aspectRatio === "4:5" ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" : "sm:grid-cols-2")}>
             {scenes.map((s, i) => (
               <li key={s.id} className="group rounded-xl border-[1.5px] border-line bg-white p-2.5 transition-colors duration-200 hover:border-line-strong">
@@ -218,6 +237,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, aiReady }: Props)
               </li>
             ))}
           </ol>
+          )}
         </section>
 
         {/* Right rail: ask + key copy */}

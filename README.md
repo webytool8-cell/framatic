@@ -25,8 +25,9 @@ This repository contains **Phase 1**. Video rendering (Phase 2) and product-demo
 | Versioned, Zod-validated scene plans (controlled vocabulary, renderer-ready) | ✅ |
 | Concept workspace: edit copy, regenerate the whole concept or chosen fields (keeps your edits), retime/reorder scenes, preferences, preferred concept, version history and restore | ✅ |
 | Storyboard frames | ✅ static sketches, labeled “Storyboard, not video” |
+| Animated preview (Phase 2 start) | ✅ Remotion composition (`src/video/`) plays each scene plan in the browser: kinetic type, shapes, product mock-ups, callouts, stat counters, logo/CTA end cards and transitions. No sound or MP4 export yet. |
 | Rate limits, background jobs, stale-job recovery, friendly errors, JSON logging | ✅ |
-| Video rendering, export, screen recording | ⏳ Phase 2/3 — not implemented |
+| MP4 export, music, screen recording | ⏳ Phase 2/3 — not implemented yet |
 
 If no `ANTHROPIC_API_KEY` is set, analysis still runs but fills in **only content found verbatim on the site** and tells the user. Concept generation is unavailable until a key is set. Nothing is ever replaced with mock results.
 
@@ -91,6 +92,10 @@ npm run build
 Covered: SSRF rejection (private ranges, metadata IP, IPv4-mapped IPv6, credentials, ports, DNS rebinding), extraction, color/font ranking, robots.txt, prioritized crawling, evidence verification (invented features and CTAs dropped), extraction-only fallback, three validated concepts, controlled-vocabulary enforcement, edit-preserving regeneration, re-analysis merge, failure states, rate limits, and cross-user isolation in Postgres.
 
 `/dev/preview?view=dashboard|running|brand|concepts|concept` renders the signed-in screens with fictional sample data in development only (404 in production).
+
+## Remotion license
+
+The animated preview uses [Remotion](https://www.remotion.dev). It's free for individuals and companies with up to 3 employees; larger companies need a Remotion company license. `acknowledgeRemotionLicense` is set on the Player, so make sure your license status matches.
 
 ## Known limitations
 

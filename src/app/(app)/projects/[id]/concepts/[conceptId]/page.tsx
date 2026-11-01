@@ -35,6 +35,7 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
         }}
         versions={versions}
         logoUrl={brand?.profile.identity.logoUrl ?? null}
+        productName={brand?.profile.product.name.value || project?.name}
         aiReady={isLLMConfigured()}
       />
     </div>
