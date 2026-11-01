@@ -1,6 +1,5 @@
 "use client";
-import { useActionState, useState } from "react";
-import { startFromBrief } from "@/app/actions/start";
+import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/form";
 import { STARTER_IDEAS } from "@/lib/brief";
 import { cn } from "@/lib/cn";
@@ -16,12 +15,31 @@ const CHIP_ON = [
 
 /** The one input that starts everything: website + optional direction + starter ideas. */
 export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boolean; size?: "lg" | "md" }) {
-  const [state, action, pending] = useActionState(startFromBrief, undefined);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/brief", { method: "POST", body: new FormData(e.currentTarget) });
+      const body = (await res.json().catch(() => ({}))) as { redirect?: string; error?: string };
+      if (body.redirect) {
+        window.location.assign(body.redirect);
+        return;
+      }
+      setError(body.error ?? "Something went wrong. Please try again.");
+    } catch {
+      setError("Couldn't reach Framatic. Check your connection and try again.");
+    }
+    setPending(false);
+  }
   const [picked, setPicked] = useState<string[]>([]);
   const [url, setUrl] = useState("");
 
   return (
-    <form action={action} className="w-full">
+    <form onSubmit={submit} className="w-full">
       <div className="rounded-[22px] border-2 border-ink bg-white p-2 shadow-[6px_6px_0_0_#7957FF] transition-shadow duration-200 focus-within:shadow-[8px_8px_0_0_#7957FF]">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label htmlFor="composer-url" className="sr-only">Your website</label>
@@ -88,7 +106,7 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
           })}
         </div>
       </fieldset>
-      {state?.error && <Alert className="mt-4">{state.error}</Alert>}
+      {error && <Alert className="mt-4">{error}</Alert>}
     </form>
   );
 }
