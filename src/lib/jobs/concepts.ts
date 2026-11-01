@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getLLM } from "@/lib/ai/llm";
+import { describeLLMError, getLLM } from "@/lib/ai/llm";
 import { CONCEPT_KINDS, CONCEPT_META, CreativePreferences, REGENERATABLE_FIELDS, mergeConcept, type ConceptKind, type RegeneratableField } from "@/lib/creative/concept";
 import { preferencesFromInstruction } from "@/lib/brief";
 import { generateConcept } from "@/lib/creative/director";
@@ -162,11 +162,5 @@ export class UserFacingError extends Error {
 }
 
 function friendly(e: unknown): string {
-  const name = (e as Error)?.name;
-  if (name === "LLMNotConfiguredError") return "AI generation isn't configured on this server yet (missing ANTHROPIC_API_KEY).";
-  if (name === "LLMOutputError") return "The AI returned an incomplete concept. Please try again.";
-  const status = (e as { status?: number })?.status;
-  if (status === 429) return "The AI service is busy right now. Please try again in a minute.";
-  if (status && status >= 500) return "The AI service is temporarily unavailable. Please try again.";
-  return "Concept generation failed. Please try again.";
+  return describeLLMError(e);
 }

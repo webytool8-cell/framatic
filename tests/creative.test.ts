@@ -120,3 +120,14 @@ describe("creative director", () => {
     expect(brandBrief(brand)).not.toContain("Voice call transcription");
   });
 });
+
+import { describeLLMError } from "@/lib/ai/llm";
+describe("AI error messages", () => {
+  it("says what to fix", () => {
+    expect(describeLLMError({ status: 400, message: '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}' })).toMatch(/out of credit/);
+    expect(describeLLMError({ status: 401, message: "invalid x-api-key" })).toMatch(/key was rejected/);
+    expect(describeLLMError({ status: 404, message: "model: claude-x not found" })).toMatch(/isn't available/);
+    expect(describeLLMError({ status: 529, message: "Overloaded" })).toMatch(/temporarily unavailable/);
+    expect(describeLLMError({ status: 400, message: "400 tools.0.input_schema: bad" })).toMatch(/rejected the request: tools/);
+  });
+});

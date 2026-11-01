@@ -3,7 +3,7 @@ import { crawlSite, CrawlError, type CrawlOptions, type SiteAnalysis } from "@/l
 import { buildBrandProfile, extractionOnlyProfile } from "@/lib/brand/intelligence";
 import { mergeReanalysis } from "@/lib/brand/merge";
 import { BrandProfileSchema, CampaignObjective, type BrandProfile } from "@/lib/brand/schema";
-import { getLLM, isLLMConfigured } from "@/lib/ai/llm";
+import { describeLLMError, getLLM, isLLMConfigured } from "@/lib/ai/llm";
 import { getBrandProfile, getProject, setProjectStatus } from "@/lib/db/repo";
 import { log } from "@/lib/log";
 
@@ -42,7 +42,7 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
       } catch (e) {
         log.error("brand intelligence failed", { projectId, error: (e as Error).message });
         profile = extractionOnlyProfile(site);
-        warnings.push("The AI brand analysis failed, so only content found directly on the site was filled in. You can re-run the analysis.");
+        warnings.push(`The AI brand analysis failed (${describeLLMError(e)}), so only content found directly on the site was filled in.`);
       }
     } else {
       profile = extractionOnlyProfile(site);
