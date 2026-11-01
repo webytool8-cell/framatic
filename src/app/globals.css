@@ -1,0 +1,166 @@
+@import "tailwindcss";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+/*
+  Framatic design tokens.
+  White canvas, deep-ink text, violet as the principal interactive accent,
+  coral / cyan / lime / yellow used selectively for meaning.
+*/
+@theme {
+  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-paper: #ffffff;
+  --color-ink: #202124;
+  --color-slate: #626776;
+  --color-line: #e8e8ee;
+  --color-line-strong: #d4d4de;
+
+  --color-violet: #7957ff;
+  --color-violet-deep: #5a3ae6; /* for violet text on white (AA) */
+  --color-coral: #ff6b6b;
+  --color-coral-deep: #c93c3c;
+  --color-cyan: #39c6e8;
+  --color-cyan-deep: #0f7f99;
+  --color-lime: #c5f467;
+  --color-lime-deep: #4f7a00;
+  --color-yellow: #ffd166;
+  --color-yellow-deep: #8a6100;
+
+  --color-lavender: #f0ebff;
+  --color-mint: #e6f9ed;
+  --color-peach: #fff0e8;
+  --color-ice: #e7f8fd;
+  --color-butter: #fff8e1;
+
+  --radius-card: 14px;
+  --radius-control: 10px;
+
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --animate-drift: drift 18s ease-in-out infinite;
+  --animate-drift-slow: drift 26s ease-in-out infinite reverse;
+  --animate-spin-slow: spin 40s linear infinite;
+  --animate-rise: rise 300ms var(--ease-snap) both;
+  --animate-pop: pop 360ms var(--ease-snap) both;
+  --animate-scan: scan 1.6s ease-in-out infinite;
+
+  @keyframes drift {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: translate3d(10px, -14px, 0) rotate(8deg); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  @keyframes scan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02";
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-violet);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Display type */
+.text-display {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+.text-heading {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.label-tech {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+/* Hover lift used by cards */
+.lift {
+  transition: transform 200ms var(--ease-snap), box-shadow 200ms var(--ease-snap), border-color 200ms var(--ease-snap);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -16px rgba(32, 33, 36, 0.35);
+}
+
+/* Animated selection border for chosen creative concepts */
+.selected-ring {
+  position: relative;
+}
+.selected-ring::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: calc(var(--radius-card) + 4px);
+  border: 2px solid var(--ring, var(--color-coral));
+  animation: pop 360ms var(--ease-snap) both;
+  pointer-events: none;
+}
+
+/* Multicolor outline for featured components */
+.multi-outline {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(90deg, var(--color-violet) 0 25%, var(--color-coral) 25% 50%, var(--color-cyan) 50% 75%, var(--color-lime) 75% 100%) border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Global keyframes used via arbitrary animate-[...] utilities */
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(0.35em); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+.hero-line {
+  display: block;
+  animation: hero-in 700ms var(--ease-snap) both;
+}
