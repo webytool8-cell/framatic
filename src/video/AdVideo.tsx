@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { TransitionSeries, linearTiming, springTiming, type TransitionPresentation, type TransitionPresentationComponentProps } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
@@ -8,7 +8,8 @@ import { clockWipe } from "@remotion/transitions/clock-wipe";
 import type { Scene, ScenePlan } from "@/lib/creative/scene-plan";
 import { AnimatedText } from "./motion";
 import { CtaButton, FeatureCallout, GeometricSweep, IconPop, LogoReveal, ProductWindow, ShapeBurst, StatCounter } from "./elements";
-import { buildTimeline, inkOn, resolveColor } from "./timeline";
+import { buildTimeline, inkOn, musicVolume, resolveColor, sequenceStarts } from "./timeline";
+import { musicPath, sfxPath, trackById, SFX } from "./music";
 
 export interface AdVideoProps extends Record<string, unknown> {
   plan: ScenePlan;
@@ -172,12 +173,55 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
   );
 }
 
+/* ---------- sound ---------- */
+const WHOOSH_TRANSITIONS = new Set(["wipe_left", "wipe_up", "whip_pan", "zoom_through", "circle_reveal", "shape_morph"]);
+const SFX_VOLUME: Record<string, number> = { whoosh: 0.45, riser: 0.4, hit: 0.6, beat_drop: 0.7, click: 0.5, swell: 0.45 };
+
+function Soundtrack({ plan }: { plan: ScenePlan }) {
+  const { fps } = useVideoConfig();
+  const timeline = buildTimeline(plan, fps);
+  const starts = sequenceStarts(plan, fps);
+  const track = trackById(plan.music.track);
+  const base = plan.music.volume ?? 0.7;
+  const cues: Array<{ at: number; name: string }> = [];
+  plan.scenes.forEach((scene, i) => {
+    for (const c of scene.audioCues) {
+      if ((SFX as readonly string[]).includes(c.cue)) cues.push({ at: starts[i] + Math.round(c.atSec * fps), name: c.cue });
+    }
+    // A soft whoosh under movement-based transitions.
+    const t = timeline.scenes[i];
+    if (i < plan.scenes.length - 1 && t.transitionFrames > 0 && WHOOSH_TRANSITIONS.has(scene.transition.type)) {
+      cues.push({ at: starts[i + 1] - Math.round(fps * 0.2), name: "whoosh" });
+    }
+  });
+  return (
+    <>
+      {track && (
+        <Audio
+          src={staticFile(musicPath(track.id))}
+          trimBefore={Math.round((track.startAtSec ?? 0) * fps)}
+          loop={track.durationSec - (track.startAtSec ?? 0) < timeline.durationInFrames / fps}
+          volume={(f) => musicVolume(f, timeline.durationInFrames, base, fps)}
+        />
+      )}
+      {cues
+        .filter((c) => c.at >= 0 && c.at < timeline.durationInFrames)
+        .map((c, i) => (
+          <Sequence key={`${c.name}-${i}`} from={c.at} layout="none">
+            <Audio src={staticFile(sfxPath(c.name))} volume={SFX_VOLUME[c.name] ?? 0.5} />
+          </Sequence>
+        ))}
+    </>
+  );
+}
+
 /* ---------- the whole ad ---------- */
 export function AdVideo({ plan, logoUrl, productName, screenshotUrl }: AdVideoProps) {
   const { width, height, fps } = useVideoConfig();
   const timeline = buildTimeline(plan, fps);
   return (
     <AbsoluteFill style={{ background: plan.palette.paper, fontFamily: `"${plan.fonts.body}", "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif` }}>
+      <Soundtrack plan={plan} />
       <TransitionSeries>
         {plan.scenes.flatMap((scene, i) => {
           const t = timeline.scenes[i];

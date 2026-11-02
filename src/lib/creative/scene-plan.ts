@@ -121,7 +121,13 @@ export const ScenePlan = z.object({
     paper: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   }),
   fonts: z.object({ heading: z.string().max(120), body: z.string().max(120) }),
-  music: z.object({ mood: z.string().max(120), bpm: z.number().int().min(60).max(180) }),
+  music: z.object({
+    mood: z.string().max(120),
+    bpm: z.number().int().min(60).max(180),
+    /** Built-in track id (src/video/music.ts) or "none" for silence. Chosen automatically if absent. */
+    track: z.string().max(40).optional(),
+    volume: z.number().min(0).max(1).default(0.7),
+  }),
   scenes: z.array(Scene).min(3).max(14),
 });
 export type ScenePlan = z.infer<typeof ScenePlan>;
@@ -164,4 +170,19 @@ export function requiredAssets(plan: ScenePlan): string[] {
     if (s.productFootage.required) set.add("product_recording");
   }
   return [...set];
+}
+
+/**
+ * Snap scene lengths to the music's half-beats so cuts land on the beat.
+ * Keeps every scene within the schema's 0.6–12s bounds.
+ */
+export function snapToBeats(plan: ScenePlan, bpm: number): ScenePlan {
+  const half = 30 / bpm; // seconds per half-beat
+  const min = Math.ceil(0.6 / half) * half;
+  const max = Math.floor(12 / half) * half;
+  const scenes = plan.scenes.map((s) => ({
+    ...s,
+    durationSec: +Math.min(max, Math.max(min, Math.round(s.durationSec / half) * half)).toFixed(3),
+  }));
+  return { ...plan, scenes, music: { ...plan.music, bpm: Math.round(bpm) } };
 }

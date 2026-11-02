@@ -39,7 +39,7 @@ const DEFAULT_PLAN: ScenePlan = {
   durationSec: 6,
   palette: { primary: "#7957FF", secondary: "#FF6B6B", accent: "#39C6E8", ink: "#202124", paper: "#FFFFFF" },
   fonts: { heading: "Space Grotesk", body: "Space Grotesk" },
-  music: { mood: "upbeat", bpm: 110 },
+  music: { mood: "upbeat", bpm: 120, track: "bright-pop", volume: 0.7 },
   scenes: [
     { id: "a", purpose: "hook", durationSec: 2, headline: "Your website.", supportingText: "", visualElements: [{ type: "word_stagger", position: "center" }], animation: { type: "word_stagger", delayMs: 0, durationMs: 600, easing: "ease_out", staggerMs: 90 }, transition: { type: "wipe_left", durationMs: 300 }, background: { type: "solid", color: "paper" }, brandAssets: [], productFootage: { required: false, description: "" }, audioCues: [], cta: null },
     { id: "b", purpose: "reveal", durationSec: 2, headline: "A whole new motion.", supportingText: "", visualElements: [{ type: "shape_burst", position: "center" }], animation: { type: "scale_pop", delayMs: 0, durationMs: 600, easing: "spring", staggerMs: 0 }, transition: { type: "circle_reveal", durationMs: 400 }, background: { type: "shape_field", color: "primary" }, brandAssets: [], productFootage: { required: false, description: "" }, audioCues: [], cta: null },

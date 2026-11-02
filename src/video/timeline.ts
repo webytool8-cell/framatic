@@ -82,3 +82,23 @@ export function sceneStarts(plan: ScenePlan, fps = FPS): number[] {
   });
   return starts;
 }
+
+/** Frame at which each scene's sequence begins (start of its incoming transition). */
+export function sequenceStarts(plan: ScenePlan, fps = FPS): number[] {
+  const { scenes } = buildTimeline(plan, fps);
+  const out: number[] = [];
+  let t = 0;
+  for (const s of scenes) {
+    out.push(t);
+    t += s.durationInFrames - s.transitionFrames;
+  }
+  return out;
+}
+
+/** Music volume envelope: short fade-in, ~1.2s fade-out at the end. */
+export function musicVolume(frame: number, totalFrames: number, base: number, fps = FPS): number {
+  const fadeIn = Math.min(1, frame / (0.3 * fps));
+  const outFrames = 1.2 * fps;
+  const fadeOut = Math.min(1, Math.max(0, (totalFrames - frame) / outFrames));
+  return Math.max(0, base * fadeIn * fadeOut);
+}

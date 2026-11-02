@@ -20,8 +20,10 @@ import {
   TRANSITION_TYPES,
   VISUAL_ELEMENT_TYPES,
   normalizeScenePlan,
+  snapToBeats,
   type ScenePlan as ScenePlanT,
 } from "./scene-plan";
+import { pickTrack, trackById } from "@/video/music";
 
 const SYSTEM = `You are Framatic's creative director: an award-winning motion-design ad creative.
 You turn a verified brand profile into a specific, polished video-ad concept and a structured scene plan for a programmatic motion-graphics renderer.
@@ -151,9 +153,15 @@ function paletteFor(b: BrandProfile): ScenePlanT["palette"] {
  * deterministically from the profile/preferences rather than trusted from AI.
  */
 export function finalizeConcept(ai: AIConcept, brand: BrandProfile, prefs: CreativePreferences): AIConcept {
+  // Pick music from the built-in library (keeping an explicit choice) and cut scenes on the beat.
+  const requested = prefs.musicTrack ?? ai.scenePlan.music.track;
+  const track = requested === "none" ? null : (trackById(requested) ?? pickTrack([prefs.musicMood ?? "", ai.musicMood, ai.scenePlan.music.mood, ai.pacing], ai.scenePlan.music.bpm));
+  const withMusic: ScenePlanT = track
+    ? snapToBeats({ ...ai.scenePlan, music: { ...ai.scenePlan.music, track: track.id } }, track.bpm)
+    : { ...ai.scenePlan, music: { ...ai.scenePlan.music, track: "none" } };
   const plan: ScenePlanT = normalizeScenePlan(
     {
-      ...ai.scenePlan,
+      ...withMusic,
       aspectRatio: prefs.aspectRatio,
       palette: paletteFor(brand),
       fonts: {

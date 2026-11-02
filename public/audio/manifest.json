@@ -1,0 +1,94 @@
+[
+  {
+    "id": "bright-pop",
+    "title": "Bright Pop",
+    "bpm": 120,
+    "durationSec": 56.0,
+    "moods": [
+      "upbeat",
+      "energetic",
+      "happy",
+      "pop",
+      "bright",
+      "positive",
+      "fun",
+      "optimistic",
+      "punchy"
+    ]
+  },
+  {
+    "id": "lofi-chill",
+    "title": "Lo-fi Chill",
+    "bpm": 86,
+    "durationSec": 69.77,
+    "moods": [
+      "lofi",
+      "lo-fi",
+      "chill",
+      "calm",
+      "relaxed",
+      "warm",
+      "mellow",
+      "soft",
+      "cozy",
+      "laid-back",
+      "gentle"
+    ]
+  },
+  {
+    "id": "tech-pulse",
+    "title": "Tech Pulse",
+    "bpm": 124,
+    "durationSec": 54.19,
+    "moods": [
+      "tech",
+      "modern",
+      "driving",
+      "confident",
+      "corporate",
+      "product",
+      "sleek",
+      "innovative",
+      "professional",
+      "saas",
+      "electronic",
+      "futuristic"
+    ]
+  },
+  {
+    "id": "cinematic-rise",
+    "title": "Cinematic Rise",
+    "bpm": 96,
+    "durationSec": 50.0,
+    "moods": [
+      "cinematic",
+      "epic",
+      "inspiring",
+      "bold",
+      "manifesto",
+      "emotional",
+      "dramatic",
+      "uplifting",
+      "anthemic",
+      "grand",
+      "heroic"
+    ]
+  },
+  {
+    "id": "playful-bounce",
+    "title": "Playful Bounce",
+    "bpm": 108,
+    "durationSec": 62.22,
+    "moods": [
+      "playful",
+      "quirky",
+      "bouncy",
+      "cheeky",
+      "friendly",
+      "light",
+      "whimsical",
+      "cute",
+      "lighthearted"
+    ]
+  }
+]

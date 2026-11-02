@@ -69,8 +69,8 @@ export default function AdPlayer({
       controls={controls}
       loop={loop}
       autoPlay={autoPlay}
-      // No soundtrack yet; starting muted lets browsers allow autoplay.
-      initiallyMuted
+      // Autoplaying previews start muted so browsers allow them; click-to-play ones have sound.
+      initiallyMuted={autoPlay}
       // Show a frame where the first scene has animated in, not a blank start.
       initialFrame={autoPlay ? 0 : Math.min(30, durationInFrames - 1)}
       acknowledgeRemotionLicense

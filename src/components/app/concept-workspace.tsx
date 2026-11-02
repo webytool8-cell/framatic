@@ -1,7 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { restoreSceneVersion, setPreferredConcept, updateConceptContent, updateConceptPreferences, updateScenes } from "@/app/actions/concepts";
+import { restoreSceneVersion, setPreferredConcept, updateConceptContent, updateConceptPreferences, updateMusic, updateScenes } from "@/app/actions/concepts";
+import { MusicPicker } from "@/components/app/music-picker";
 import { Button } from "@/components/ui/button";
 import { accentBorder } from "@/components/ui/card";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui/form";
@@ -205,12 +206,20 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                 ))}
               </div>
             </div>
-            <p className="text-xs text-slate">{view === "preview" ? "Live animated preview, no sound yet. Export an MP4 from the panel on the right." : "Click any line to edit it."}</p>
+            <p className="text-xs text-slate">{view === "preview" ? "Live preview with music. Press play to hear it." : "Click any line to edit it."}</p>
           </div>
           {view === "preview" && (
             <div className="rounded-xl border border-line bg-white p-3">
               <ScenePreview plan={planPreview} logoUrl={logoUrl} productName={productName} />
-              {scenesDirty && <p className="mt-2 text-xs text-slate">Showing your unsaved edits.</p>}
+              <div className="mt-2">
+                <MusicPicker
+                  track={concept.plan.music.track}
+                  volume={concept.plan.music.volume ?? 0.7}
+                  disabled={!!busy || anyDirty}
+                  onChange={(t, v) => run("music", () => updateMusic(concept.id, t, v))}
+                />
+              </div>
+              {scenesDirty && <p className="mt-2 text-xs text-slate">Showing your unsaved edits. Save them before changing music.</p>}
             </div>
           )}
           {view === "frames" && (

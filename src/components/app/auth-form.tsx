@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, Field, Input } from "@/components/ui/form";
 import type { FormState } from "@/app/actions/auth";
+import { GoogleButton } from "./google-button";
 
 export function AuthForm({
   mode,
@@ -18,12 +19,18 @@ export function AuthForm({
 }) {
   const [state, formAction, pending] = useActionState(action, initialError ? { error: initialError } : undefined);
   return (
+    <>
+    <GoogleButton next={next} />
     <form action={formAction} className="space-y-5">
       {next && <input type="hidden" name="next" value={next} />}
       <Field label="Email" htmlFor="email">
         <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
       </Field>
-      <Field label="Password" htmlFor="password" hint={mode === "signup" ? "At least 8 characters." : undefined}>
+      <Field
+        label="Password"
+        htmlFor="password"
+        hint={mode === "signup" ? "At least 8 characters." : <Link href="/forgot-password" className="font-semibold text-violet-deep hover:underline">Forgot your password?</Link>}
+      >
         <Input id="password" name="password" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={8} />
       </Field>
       {state?.error && <Alert>{state.error}</Alert>}
@@ -39,5 +46,6 @@ export function AuthForm({
         )}
       </p>
     </form>
+    </>
   );
 }

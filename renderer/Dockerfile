@@ -19,6 +19,7 @@ COPY tsconfig.json remotion.config.ts ./
 COPY src/video ./src/video
 COPY src/lib/creative/scene-plan.ts ./src/lib/creative/scene-plan.ts
 COPY renderer ./renderer
+COPY public/audio ./public/audio
 RUN npx remotion bundle src/video/remotion/index.ts --out-dir=/app/bundle
 
 ENV NODE_ENV=production BUNDLE_DIR=/app/bundle

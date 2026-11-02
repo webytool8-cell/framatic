@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { ConceptContent, CreativePreferences, EDITABLE_FIELDS } from "@/lib/creative/concept";
-import { Scene, ScenePlan, normalizeScenePlan } from "@/lib/creative/scene-plan";
+import { Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
+import { trackById } from "@/video/music";
 import { getConcept, saveConceptVersion } from "@/lib/db/repo";
 import type { FormState } from "./auth";
 
@@ -98,4 +99,30 @@ export async function restoreSceneVersion(conceptId: string, version: number): P
   });
   revalidatePath(`/projects/${concept.project_id}`, "layout");
   return { message: `Restored version ${version} as a new version` };
+}
+
+/** Change the soundtrack: a built-in track (scenes re-cut on its beat) or "none". */
+export async function updateMusic(conceptId: string, trackId: string, volume: number): Promise<FormState> {
+  const { supabase, user } = await requireUser();
+  const concept = await getConcept(supabase, user.id, conceptId);
+  if (!concept?.scenePlan) return { error: "Concept not found." };
+  const track = trackId === "none" ? null : trackById(trackId);
+  if (trackId !== "none" && !track) return { error: "That track isn't available." };
+  const vol = Math.max(0, Math.min(1, Number.isFinite(volume) ? volume : 0.7));
+  const base = { ...concept.scenePlan, music: { ...concept.scenePlan.music, track: track ? track.id : "none", volume: vol } };
+  const plan = ScenePlan.safeParse(normalizeScenePlan(track ? snapToBeats(base, track.bpm) : base, concept.content.cta));
+  if (!plan.success) return { error: "Couldn't apply that track to this concept." };
+  await supabase
+    .from("creative_concepts")
+    .update({ preferences: { ...concept.preferences, musicTrack: track ? track.id : "none" } })
+    .eq("id", conceptId)
+    .eq("user_id", user.id);
+  await saveConceptVersion(supabase, user.id, { ...concept }, {
+    content: { ...concept.content, estimatedDurationSec: plan.data.durationSec },
+    editedFields: concept.edited_fields,
+    scenePlan: plan.data,
+    source: "user",
+  });
+  revalidatePath(`/projects/${concept.project_id}`, "layout");
+  return { message: track ? `Music: ${track.title}` : "Music off" };
 }

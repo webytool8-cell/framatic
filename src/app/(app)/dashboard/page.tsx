@@ -7,8 +7,8 @@ export const metadata = { title: "Projects" };
 
 type Identity = { primaryColor?: string; secondaryColors?: string[]; accentColors?: string[] };
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error: startError } = await searchParams;
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ error?: string; password?: string }> }) {
+  const { error: startError, password } = await searchParams;
   const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from("projects")
@@ -61,6 +61,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section className="rounded-xl border border-line bg-white p-4 sm:p-5" aria-label="New ad">
         <Composer size="md" />
       </section>
+      {password === "updated" && <p className="rounded-lg border-l-4 border-lime bg-mint px-4 py-2 text-sm">Your password was updated.</p>}
       {startError === "start" && <p className="text-sm text-coral-deep">We couldn&apos;t start that project. Please try again.</p>}
       {error && <p className="text-sm text-coral-deep">Couldn&apos;t load your projects. Refresh to try again.</p>}
 

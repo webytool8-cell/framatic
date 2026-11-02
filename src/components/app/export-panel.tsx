@@ -67,7 +67,7 @@ export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio,
             {starting ? "Starting export…" : "Export MP4"}
           </Button>
           <p className="mt-2 text-xs text-slate">
-            Renders the saved version (v{version}) in the cloud, usually in under a minute. No sound yet.
+            Renders the saved version (v{version}) in the cloud, usually in about a minute.
             {hasUnsaved && <span className="text-coral-deep"> You have unsaved edits; save first to include them.</span>}
           </p>
         </>

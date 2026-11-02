@@ -162,7 +162,7 @@ export default function Landing() {
             </ul>
           </Tile>
 
-          <Tile title="Live motion preview" body="Kinetic type, geometric motion and transitions, played straight from the scene plan, then exported to MP4. Music is coming next." className="lg:row-span-2">
+          <Tile title="Live motion preview" body="Kinetic type, geometric motion and transitions, set to original music with cuts on the beat, then exported to MP4." className="lg:row-span-2">
             <div className="mx-auto max-w-[220px]"><ScenePreview plan={sampleVerticalPlan} productName="Tidyflow" autoPlay controls={false} compact /></div>
           </Tile>
 
