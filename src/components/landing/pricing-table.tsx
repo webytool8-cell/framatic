@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PLANS, PUBLIC_PLANS, projectsPerMonth, type PlanId } from "@/lib/plans";
 import { cn } from "@/lib/cn";
+import { Spark } from "@/components/ui/shapes";
 
 const ACCENT: Record<string, { ring: string; chip: string; bar: string }> = {
   free: { ring: "ring-black/5", chip: "bg-[#F2F2F6] text-ink", bar: "bg-line-strong" },
@@ -49,7 +50,12 @@ export function PricingTable({ signedIn, currentPlan }: { signedIn: boolean; cur
           const paid = (p.priceMonthly ?? 0) > 0;
           return (
             <li key={id} className={cn("relative flex flex-col rounded-3xl bg-white p-6 shadow-[0_24px_48px_-32px_rgba(32,33,36,0.35)] ring-1", a.ring, p.highlight && "xl:-mt-4 xl:pb-10")}>
-              {p.highlight && <span className="absolute -top-3 left-6 rounded-full bg-violet px-3 py-1 text-xs font-semibold text-white">Most popular</span>}
+              {p.highlight && (
+                <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-violet px-3 py-1 text-xs font-semibold text-white">
+                  <Spark className="h-3 w-3" color="#C5F467" />
+                  Most popular
+                </span>
+              )}
               <div className="flex items-center justify-between">
                 <h2 className="text-heading text-xl">{p.label}</h2>
                 {current && <span className="rounded-full bg-mint px-2.5 py-0.5 text-xs font-semibold text-lime-deep">Your plan</span>}

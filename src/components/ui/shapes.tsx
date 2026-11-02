@@ -60,13 +60,30 @@ export function Dots({ className, color = "#202124" }: { className?: string; col
   );
 }
 
-/** Framatic logo: the outlined "F" mark with the wordmark set in heavy, wide Archivo. */
+/** Framatic logo: the filmstrip-and-spark mark with the wordmark set in heavy, wide Archivo. */
 export function Logo({ className, mono = false }: { className?: string; mono?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-2 text-ink", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG, no optimisation needed */}
-      <img src="/logo.svg" alt="" aria-hidden width={18} height={28} className={cn("h-8 w-auto", mono && "grayscale")} />
+      <img src="/logo.svg" alt="" aria-hidden width={25} height={28} className={cn("h-7 w-auto", mono && "opacity-90")} />
       <span className="text-[20px] leading-none tracking-[-0.02em]" style={{ fontWeight: 800, fontStretch: "112%" }}>framatic</span>
     </span>
+  );
+}
+
+/** The curved four-point spark from the logo, as a decorative accent. */
+export function Spark({ className, color = "#7957FF", twinkle = false, delay = 0, style }: { className?: string; color?: string; twinkle?: boolean; delay?: number; style?: React.CSSProperties }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="133.9 169.5 232.2 232"
+      className={cn("pointer-events-none select-none", twinkle && "animate-twinkle", className)}
+      style={{ animationDelay: delay ? `${delay}ms` : undefined, ...style }}
+    >
+      <path
+        d="M250 169.516C258.929 169.516 256.696 225.277 285.714 249.812C312.5 274.348 366.071 276.578 366.071 285.5C366.071 294.422 312.5 296.652 285.714 321.188C256.696 345.723 258.929 401.484 250 401.484C241.071 401.484 243.304 345.723 214.286 321.188C187.5 296.652 133.929 294.422 133.929 285.5C133.929 276.578 187.5 274.348 214.286 249.812C243.304 225.277 241.071 169.516 250 169.516Z"
+        fill={color}
+      />
+    </svg>
   );
 }

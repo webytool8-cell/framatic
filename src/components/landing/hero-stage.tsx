@@ -4,6 +4,7 @@ import { Composer } from "@/components/app/composer";
 import { WorkspacePreview } from "@/components/landing/workspace-preview";
 import { SAMPLE_PRODUCTS } from "@/lib/samples";
 import { cn } from "@/lib/cn";
+import { Spark } from "@/components/ui/shapes";
 
 /** Store and product-page platforms whose public pages Framatic can read. */
 export const PLATFORMS = ["Shopify", "WooCommerce", "Wix", "Squarespace", "Webflow", "Gumroad", "Lemon Squeezy", "App Store"];
@@ -68,7 +69,9 @@ export function HeroStage({ children }: { children: React.ReactNode }) {
         </ul>
       </div>
 
-      <div ref={previewRef} className="scroll-mt-20 lg:sticky lg:top-24 lg:pt-12">
+      <div ref={previewRef} className="relative scroll-mt-20 lg:sticky lg:top-24 lg:pt-12">
+        <Spark className="absolute -left-4 -top-5 z-10 h-10 w-10 lg:top-7" color="#7957FF" twinkle delay={400} />
+        <Spark className="absolute -bottom-4 right-8 z-10 h-6 w-6" color="#FFD166" twinkle delay={1600} />
         <WorkspacePreview key={sample.id} sample={sample} />
       </div>
     </div>

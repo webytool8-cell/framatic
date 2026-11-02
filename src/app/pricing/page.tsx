@@ -3,6 +3,7 @@ import { SiteFooter, SiteHeader } from "@/components/landing/site-chrome";
 import { PricingTable } from "@/components/landing/pricing-table";
 import { CREDIT_ACTIONS, CREDIT_COST, PLANS, PUBLIC_PLANS, creditBalance, formatResetDate, type CreditBalance } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
+import { Spark } from "@/components/ui/shapes";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -53,7 +54,11 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           )}
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <p className="mb-3 text-sm font-semibold text-violet-deep">Pricing</p>
-            <h1 className="text-display text-[clamp(2.4rem,4.2vw,3.6rem)]">Pay for ads, not seats.</h1>
+            <h1 className="text-display relative inline-block text-[clamp(2.4rem,4.2vw,3.6rem)]">
+              Pay for ads, not seats.
+              <Spark className="absolute -right-8 -top-4 h-8 w-8" color="#FF6B6B" twinkle />
+              <Spark className="absolute -left-7 bottom-1 h-4 w-4" color="#39C6E8" twinkle delay={1200} />
+            </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate">Every plan comes with monthly credits for AI work. Start free with no credit card, and pick a bigger plan when you&apos;re running more ads.</p>
           </div>
           <PricingTable signedIn={signedIn} currentPlan={balance?.plan === "unlimited" ? null : (balance?.plan ?? null)} />

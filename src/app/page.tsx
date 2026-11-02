@@ -2,6 +2,7 @@ import { HeroStage, PlatformStrip } from "@/components/landing/hero-stage";
 import { AdGallery } from "@/components/landing/ad-gallery";
 import { ScenePreview } from "@/components/app/scene-preview";
 import { SiteFooter, SiteHeader } from "@/components/landing/site-chrome";
+import { Spark } from "@/components/ui/shapes";
 import { Tag } from "@/components/ui/status";
 import { sampleVerticalPlan } from "@/lib/samples";
 import { MusicTeaser } from "@/components/landing/music-teaser";
@@ -33,10 +34,13 @@ function Band({ id, tone, children, className = "" }: { id?: string; tone: "hero
   );
 }
 
-function SectionHead({ kicker, title, body, light = false }: { kicker: string; title: string; body?: string; light?: boolean }) {
+function SectionHead({ kicker, title, body, light = false, spark }: { kicker: string; title: string; body?: string; light?: boolean; spark?: string }) {
   return (
     <div className="mb-14 max-w-2xl">
-      <p className={`mb-3 text-sm font-semibold ${light ? "text-lime" : "text-violet-deep"}`}>{kicker}</p>
+      <p className={`mb-3 flex items-center gap-1.5 text-sm font-semibold ${light ? "text-lime" : "text-violet-deep"}`}>
+        {spark && <Spark className="h-3.5 w-3.5" color={spark} />}
+        {kicker}
+      </p>
       <h2 className="text-display text-[clamp(2.2rem,4.6vw,3.6rem)]">{title}</h2>
       {body && <p className={`mt-4 text-lg leading-relaxed ${light ? "text-white/80" : "text-slate"}`}>{body}</p>}
     </div>
@@ -61,6 +65,7 @@ export default function Landing() {
             A whole new{" "}
             <span className="relative inline-block whitespace-nowrap">
               motion.
+              <Spark className="absolute -right-[0.8em] top-[0.08em] h-[0.48em] w-[0.48em]" color="#FF6B6B" twinkle />
               <span aria-hidden className="absolute -bottom-[0.05em] left-[0.04em] h-[0.1em] w-[calc(100%-0.4em)] origin-left animate-[grow_700ms_var(--ease-snap)_400ms_both] rounded-full bg-coral" />
             </span>
           </h1>
@@ -73,7 +78,7 @@ export default function Landing() {
 
       {/* 2 · Gallery */}
       <Band id="examples" tone="blush">
-        <SectionHead kicker="Made with Framatic" title="Real output, playing live" body="Four sample products, four placements. These aren't screen recordings: each ad is rendered right now by the same engine that exports your MP4. Brands are fictional." />
+        <SectionHead spark="#FF6B6B" kicker="Made with Framatic" title="Real output, playing live" body="Four sample products, four placements. These aren't screen recordings: each ad is rendered right now by the same engine that exports your MP4. Brands are fictional." />
         <AdGallery />
       </Band>
 
@@ -207,14 +212,16 @@ export default function Landing() {
 
       {/* 5 · Sound */}
       <Band id="sound" tone="fresh">
-        <SectionHead kicker="Music & sound" title="Sounds as good as it looks" body="Every ad gets a track that fits the product. Cuts and transitions land on the beat, and the music sits under your message. Press play." />
+        <SectionHead spark="#39C6E8" kicker="Music & sound" title="Sounds as good as it looks" body="Every ad gets a track that fits the product. Cuts and transitions land on the beat, and the music sits under your message. Press play." />
         <MusicTeaser />
       </Band>
 
       {/* 6 · Closing */}
       <Band tone="night">
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
+          <div className="relative max-w-2xl">
+            <Spark className="absolute -left-2 -top-14 h-9 w-9 md:-left-10" color="#C5F467" twinkle />
+            <Spark className="absolute -top-6 left-10 h-4 w-4 md:left-0" color="#FFD166" twinkle delay={900} />
             <p className="mb-3 text-sm font-semibold text-lime">Ready when you are</p>
             <h2 className="text-display text-[clamp(2.4rem,5vw,4rem)]">What would your product&apos;s ad look like?</h2>
             <p className="mt-4 text-lg text-white/75">Find out in a couple of minutes. All it takes is a link to what you sell.</p>
