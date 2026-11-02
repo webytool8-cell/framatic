@@ -1,9 +1,10 @@
-# Deploys the MP4 renderer to AWS (Remotion Lambda):
-#   1. the Lambda function that renders frames
-#   2. the bundled video composition ("site") it renders
-# Runs on demand and whenever the video code changes on main.
-# Needs repository secrets REMOTION_AWS_ACCESS_KEY_ID and REMOTION_AWS_SECRET_ACCESS_KEY,
-# and optionally the repository variable REMOTION_AWS_REGION (default us-east-1).
+# Builds the video renderer image and deploys it as a Google Cloud Run Job.
+# Runs on demand and whenever video code changes on main.
+#
+# Repository secrets: GCP_PROJECT_ID, GCP_DEPLOY_KEY (service-account JSON),
+#                     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Optional variable:  GCP_REGION (default us-central1)
+# See docs/gcp/SETUP.md.
 name: Deploy video renderer
 
 on:
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - "src/video/**"
+      - "renderer/**"
       - "remotion.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -20,58 +22,73 @@ concurrency:
   group: deploy-video-renderer
   cancel-in-progress: false
 
+env:
+  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  JOB: framatic-renderer
+  REPO: framatic
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      REMOTION_AWS_ACCESS_KEY_ID: ${{ secrets.REMOTION_AWS_ACCESS_KEY_ID }}
-      REMOTION_AWS_SECRET_ACCESS_KEY: ${{ secrets.REMOTION_AWS_SECRET_ACCESS_KEY }}
-      REMOTION_AWS_REGION: ${{ vars.REMOTION_AWS_REGION || 'us-east-1' }}
+    timeout-minutes: 40
     steps:
-      - name: Check AWS keys are configured
-        id: keys
+      - name: Check Google Cloud settings
+        id: cfg
+        env:
+          HAS_KEY: ${{ secrets.GCP_DEPLOY_KEY != '' && secrets.GCP_PROJECT_ID != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
         run: |
-          if [ -z "$REMOTION_AWS_ACCESS_KEY_ID" ] || [ -z "$REMOTION_AWS_SECRET_ACCESS_KEY" ]; then
-            echo "::warning::AWS keys are not set as repository secrets yet, so nothing was deployed. See docs/aws/SETUP.md."
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::warning::Google Cloud secrets aren't set yet, so nothing was deployed. See docs/gcp/SETUP.md."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v4
-        if: steps.keys.outputs.ready == 'true'
+        if: steps.cfg.outputs.ready == 'true'
 
-      - uses: actions/setup-node@v4
-        if: steps.keys.outputs.ready == 'true'
+      - uses: google-github-actions/auth@v2
+        if: steps.cfg.outputs.ready == 'true'
         with:
-          node-version: 22
-          cache: npm
+          credentials_json: ${{ secrets.GCP_DEPLOY_KEY }}
 
-      - name: Install
-        if: steps.keys.outputs.ready == 'true'
-        run: npm ci
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.cfg.outputs.ready == 'true'
 
-      - name: Deploy Lambda function
-        if: steps.keys.outputs.ready == 'true'
-        run: npx remotion lambda functions deploy --region="$REMOTION_AWS_REGION" --memory=2048 --disk=2048 --timeout=240 --retention-period=7
+      - name: Prepare project
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+          gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --quiet || true
+          gcloud artifacts repositories describe "$REPO" --location="$REGION" >/dev/null 2>&1 || \
+            gcloud artifacts repositories create "$REPO" --repository-format=docker --location="$REGION" --description="Framatic images"
 
-      - name: Deploy video site
-        if: steps.keys.outputs.ready == 'true'
-        run: npx remotion lambda sites create src/video/remotion/index.ts --site-name=framatic --region="$REMOTION_AWS_REGION"
+      - name: Build image
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/$REPO/renderer:${GITHUB_SHA::12}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud builds submit --config renderer/cloudbuild.yaml --substitutions=_IMAGE="$IMAGE" --suppress-logs .
+
+      - name: Deploy Cloud Run job
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          gcloud run jobs deploy "$JOB" \
+            --image="$IMAGE" \
+            --region="$REGION" \
+            --tasks=1 --max-retries=1 --task-timeout=900s \
+            --cpu=4 --memory=8Gi \
+            --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            --quiet
 
       - name: Summary
-        if: steps.keys.outputs.ready == 'true'
+        if: steps.cfg.outputs.ready == 'true'
         run: |
           {
             echo "## Video renderer deployed"
             echo ""
-            echo "Region: \`$REMOTION_AWS_REGION\`"
+            echo "- Job: \`$JOB\` in \`$REGION\`"
+            echo "- Image: \`$IMAGE\`"
             echo ""
-            echo '```'
-            npx remotion lambda functions ls --region="$REMOTION_AWS_REGION" 2>/dev/null | tail -n 5
-            npx remotion lambda sites ls --region="$REMOTION_AWS_REGION" 2>/dev/null | tail -n 5
-            echo '```'
-            echo ""
-            echo "The app finds the function and site automatically. Make sure the same REMOTION_AWS_* keys are set in Vercel."
+            echo "In Vercel set \`GCP_PROJECT_ID\`, \`GCP_REGION=$REGION\` and \`GCP_SERVICE_ACCOUNT_KEY\`, then redeploy."
           } >> "$GITHUB_STEP_SUMMARY"

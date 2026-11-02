@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
-import { log } from "@/lib/log";
-import { describeRenderError, downloadUrl, lambdaRenderStatus } from "@/lib/render/lambda";
+import { RENDER_BUCKET } from "@/lib/render/cloudrun";
 
 export const dynamic = "force-dynamic";
 
-/** Poll a render; refreshes progress from Lambda and returns a short-lived download link when done. */
+const STALE_MS = 20 * 60_000;
+
+/**
+ * Poll a render. The render job writes progress to the row itself; this
+ * returns it plus a short-lived signed download link when the MP4 is ready.
+ */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -16,34 +20,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!r) return jsonError("Render not found.", 404);
 
     let row = r;
-    if (r.status === "rendering" && r.render_id && r.bucket_name) {
-      try {
-        const s = await lambdaRenderStatus(r.render_id, r.bucket_name);
-        const update = {
-          progress: s.done ? 1 : s.progress,
-          status: s.failed ? "failed" : s.done ? "done" : "rendering",
-          out_key: s.outKey,
-          out_size_bytes: s.sizeBytes,
-          cost_usd: s.costUsd,
-          error: s.error,
-        };
-        const stale = !s.done && !s.failed && Date.now() - new Date(r.created_at).getTime() > 15 * 60_000;
-        if (stale) Object.assign(update, { status: "failed", error: "The render timed out. Please try again." });
-        const { data: updated } = await supabase.from("renders").update(update).eq("id", id).eq("user_id", user.id).select("*").single();
-        if (updated) row = updated;
-      } catch (e) {
-        log.warn("render progress failed", { id, error: (e as Error).message });
-        return NextResponse.json({ ...publicRow(r), error: describeRenderError(e) });
-      }
+    if (r.status === "rendering" && Date.now() - new Date(r.updated_at).getTime() > STALE_MS) {
+      const { data } = await supabase.from("renders").update({ status: "failed", error: "The render stopped responding. Please try again." }).eq("id", id).eq("user_id", user.id).select("*").single();
+      if (data) row = data;
     }
-    const url = row.status === "done" && row.bucket_name && row.out_key ? await downloadUrl(row.bucket_name, row.out_key) : null;
-    return NextResponse.json({ ...publicRow(row), downloadUrl: url }, { headers: { "cache-control": "no-store" } });
+
+    let downloadUrl: string | null = null;
+    if (row.status === "done" && row.out_key) {
+      const { data } = await supabase.storage.from(RENDER_BUCKET).createSignedUrl(row.out_key, 60 * 60, { download: row.file_name || true });
+      downloadUrl = data?.signedUrl ?? null;
+    }
+    const { status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error: err, created_at } = row;
+    return NextResponse.json(
+      { id, status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error: err, created_at, downloadUrl },
+      { headers: { "cache-control": "no-store" } },
+    );
   } catch (e) {
     return handleRouteError(e, "render status");
   }
-}
-
-function publicRow(r: Record<string, unknown>) {
-  const { id, status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error, created_at } = r;
-  return { id, status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error, created_at };
 }

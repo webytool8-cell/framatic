@@ -27,7 +27,7 @@ This repository contains **Phase 1**. Video rendering (Phase 2) and product-demo
 | Storyboard frames | ✅ static sketches, labeled “Storyboard, not video” |
 | Animated preview (Phase 2 start) | ✅ Remotion composition (`src/video/`) plays each scene plan in the browser: kinetic type, shapes, product mock-ups, callouts, stat counters, logo/CTA end cards and transitions. No sound yet. |
 | Rate limits, background jobs, stale-job recovery, friendly errors, JSON logging | ✅ |
-| MP4 export | ✅ Remotion Lambda in your AWS account: export button, live progress, private download links, render history. Setup: [`docs/aws/SETUP.md`](docs/aws/SETUP.md) |
+| MP4 export | ✅ Google Cloud Run Job per export (`renderer/`), MP4 stored in Supabase Storage; export button, live progress, private download links, render history. Setup: [`docs/gcp/SETUP.md`](docs/gcp/SETUP.md) |
 | Music, screen recording | ⏳ not implemented yet |
 
 If no `ANTHROPIC_API_KEY` is set, analysis still runs but fills in **only content found verbatim on the site** and tells the user. Concept generation is unavailable until a key is set. Nothing is ever replaced with mock results.

@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+out
+tests
+supabase
+docs
+*.mp4
+.env*

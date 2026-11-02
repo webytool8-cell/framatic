@@ -72,7 +72,7 @@ export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio,
           </p>
         </>
       ) : (
-        <p className="rounded-lg bg-[#FAFAFC] px-3 py-2 text-sm text-slate">Video export isn&apos;t switched on for this server yet. It needs the AWS keys described in the README.</p>
+        <p className="rounded-lg bg-[#FAFAFC] px-3 py-2 text-sm text-slate">Video export isn&apos;t switched on for this server yet. It needs the Google Cloud settings described in the README.</p>
       )}
       {error && <p className="mt-2 text-sm text-coral-deep">{error}</p>}
       {items.length > 0 && (

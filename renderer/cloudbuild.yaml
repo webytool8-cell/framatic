@@ -1,0 +1,9 @@
+# Builds the renderer image. Run from the repository root:
+#   gcloud builds submit --config renderer/cloudbuild.yaml --substitutions=_IMAGE=<image> .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "renderer/Dockerfile", "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 1800s

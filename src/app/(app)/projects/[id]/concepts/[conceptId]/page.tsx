@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConceptWorkspace } from "@/components/app/concept-workspace";
 import { isLLMConfigured } from "@/lib/ai/llm";
-import { isRenderConfigured } from "@/lib/render/lambda";
+import { isRenderConfigured } from "@/lib/render/cloudrun";
 import type { RenderItem } from "@/components/app/export-panel";
 import { getBrandProfile, getConcept, getProject, listSceneVersions } from "@/lib/db/repo";
 import { requireUser } from "@/lib/supabase/server";

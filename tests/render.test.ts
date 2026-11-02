@@ -1,26 +1,35 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { describeRenderError, isRenderConfigured, resolveRenderTarget } from "@/lib/render/lambda";
+import { buildRunRequest, describeRenderError, isRenderConfigured, parseServiceAccountKey } from "@/lib/render/cloudrun";
 
-describe("MP4 export configuration", () => {
-  it("reports clearly when AWS isn't set up", async () => {
-    delete process.env.REMOTION_AWS_ACCESS_KEY_ID;
+const key = { client_email: "renderer@proj.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n" };
+
+describe("MP4 export on Cloud Run", () => {
+  it("is off until the Google Cloud settings exist", () => {
+    delete process.env.GCP_PROJECT_ID;
     expect(isRenderConfigured()).toBe(false);
-    await expect(resolveRenderTarget()).rejects.toMatchObject({ name: "RenderNotConfiguredError" });
+    process.env.GCP_PROJECT_ID = "proj";
+    process.env.GCP_SERVICE_ACCOUNT_KEY = JSON.stringify(key);
+    expect(isRenderConfigured()).toBe(true);
+    delete process.env.GCP_PROJECT_ID;
   });
 
-  it("uses explicit function/site overrides without calling AWS", async () => {
-    process.env.REMOTION_AWS_ACCESS_KEY_ID = "AKIA_TEST";
-    process.env.REMOTION_AWS_SECRET_ACCESS_KEY = "secret";
-    process.env.FRAMATIC_REMOTION_FUNCTION_NAME = "remotion-render-test";
-    process.env.FRAMATIC_REMOTION_SERVE_URL = "https://example.s3.amazonaws.com/sites/framatic/index.html";
-    await expect(resolveRenderTarget()).resolves.toEqual(expect.objectContaining({ functionName: "remotion-render-test" }));
-    delete process.env.REMOTION_AWS_ACCESS_KEY_ID;
+  it("accepts the key as raw JSON or base64", () => {
+    expect(parseServiceAccountKey(JSON.stringify(key)).client_email).toBe(key.client_email);
+    expect(parseServiceAccountKey(Buffer.from(JSON.stringify(key)).toString("base64")).private_key).toContain("PRIVATE KEY");
+    expect(() => parseServiceAccountKey("nope")).toThrow(/valid JSON/);
   });
 
-  it("explains AWS failures", () => {
-    expect(describeRenderError(new Error("The security token included in the request is invalid. InvalidClientTokenId"))).toMatch(/rejected the access keys/);
-    expect(describeRenderError(new Error("AccessDeniedException: not authorized to perform lambda:InvokeFunction"))).toMatch(/permissions/);
-    expect(describeRenderError(new Error("Rate Exceeded"))).toMatch(/busy/);
+  it("passes the render payload to the job as a base64 env var", () => {
+    const body = buildRunRequest({ renderId: "r1", userId: "u1", fileName: "ad.mp4", props: { plan: { scenes: [] } as never } });
+    const env = body.overrides.containerOverrides[0].env[0];
+    expect(env.name).toBe("RENDER_PAYLOAD");
+    expect(JSON.parse(Buffer.from(env.value, "base64").toString())).toMatchObject({ renderId: "r1", userId: "u1" });
+  });
+
+  it("explains Google Cloud failures", () => {
+    expect(describeRenderError({ response: { status: 404 }, message: "Resource not found" })).toMatch(/Deploy video renderer/);
+    expect(describeRenderError({ response: { status: 403 }, message: "Permission denied" })).toMatch(/Cloud Run Developer/);
+    expect(describeRenderError({ message: "invalid_grant: Invalid JWT Signature." })).toMatch(/rejected the service-account key/);
   });
 });
