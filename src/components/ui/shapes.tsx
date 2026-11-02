@@ -60,12 +60,15 @@ export function Dots({ className, color = "#202124" }: { className?: string; col
   );
 }
 
-/** Framatic logo: the filmstrip-and-spark mark with the wordmark set in heavy, wide Archivo. */
+/**
+ * Framatic logo: the filmstrip-and-spark mark (coral) with the wordmark in heavy, wide Archivo.
+ * `mono` uses the black mark, for the rare places where color would clash (e.g. the footer).
+ */
 export function Logo({ className, mono = false }: { className?: string; mono?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-2 text-ink", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG, no optimisation needed */}
-      <img src="/logo.svg" alt="" aria-hidden width={25} height={28} className={cn("h-7 w-auto", mono && "opacity-90")} />
+      <img src={mono ? "/logo-black.svg" : "/logo.svg"} alt="" aria-hidden width={25} height={28} className="h-7 w-auto" />
       <span className="text-[20px] leading-none tracking-[-0.02em]" style={{ fontWeight: 800, fontStretch: "112%" }}>framatic</span>
     </span>
   );
