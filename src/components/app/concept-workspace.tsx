@@ -8,6 +8,7 @@ import { Alert, Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Tag } from "@/components/ui/status";
 import { PURPOSE_COLOR, SceneStrip, StoryboardFrame } from "@/components/app/storyboard";
 import { ScenePreview } from "@/components/app/scene-preview";
+import { ExportPanel, type RenderItem } from "@/components/app/export-panel";
 import { CAMPAIGN_OBJECTIVES } from "@/lib/brand/schema";
 import {
   CONCEPT_META,
@@ -38,6 +39,8 @@ type Props = {
   logoUrl: string | null;
   productName?: string;
   aiReady: boolean;
+  renderReady?: boolean;
+  renders?: RenderItem[];
 };
 
 const QUICK_ASKS = ["Make it punchier", "Shorter: 15 seconds", "Vertical 9:16 for Reels", "More playful", "Focus on one feature", "Stronger call to action"];
@@ -45,7 +48,7 @@ const LONG: EditableField[] = ["description", "rationale", "supportingCopy", "vi
 const ADVANCED_FIELDS: EditableField[] = ["title", "campaignObjective", "description", "targetAudience", "rationale", "visualDirection", "typographyDirection", "musicMood", "pacing"];
 const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady }: Props) {
+export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [] }: Props) {
   const router = useRouter();
   const meta = CONCEPT_META[concept.kind];
   const [content, setContent] = useState(concept.content);
@@ -202,7 +205,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                 ))}
               </div>
             </div>
-            <p className="text-xs text-slate">{view === "preview" ? "Live animated preview, no sound yet. Video export is coming soon." : "Click any line to edit it."}</p>
+            <p className="text-xs text-slate">{view === "preview" ? "Live animated preview, no sound yet. Export an MP4 from the panel on the right." : "Click any line to edit it."}</p>
           </div>
           {view === "preview" && (
             <div className="rounded-xl border border-line bg-white p-3">
@@ -242,6 +245,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
 
         {/* Right rail: ask + key copy */}
         <div className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <ExportPanel conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
           {aiReady && (
             <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white p-4 shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="ask-title">
               <h3 id="ask-title" className="text-heading mb-2 text-lg">Ask for changes</h3>

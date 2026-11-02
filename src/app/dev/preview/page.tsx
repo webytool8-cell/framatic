@@ -84,7 +84,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
         )}
         {view === "concept" && (() => {
           const { scenePlan, ...content } = concepts[1];
-          return <ConceptWorkspace concept={{ id: "demo", kind: "product_in_motion", content, preferences: prefs, editedFields: ["headline"], isPreferred: false, version: 2, plan: { ...samplePlan, palette: scenePlan.palette } }} versions={[{ version: 2, source: "user", created_at: new Date().toISOString() }, { version: 1, source: "ai", created_at: new Date().toISOString() }]} logoUrl={null} productName="Tidyflow" aiReady />;
+          return <ConceptWorkspace concept={{ id: "demo", kind: "product_in_motion", content, preferences: prefs, editedFields: ["headline"], isPreferred: false, version: 2, plan: { ...samplePlan, palette: scenePlan.palette } }} versions={[{ version: 2, source: "user", created_at: new Date().toISOString() }, { version: 1, source: "ai", created_at: new Date().toISOString() }]} logoUrl={null} productName="Tidyflow" aiReady renderReady renders={[{ id: "r1", status: "rendering", progress: 0.42, aspect_ratio: "16:9", duration_sec: 11.6, scene_plan_version: 2, created_at: new Date().toISOString() }, { id: "r0", status: "done", progress: 1, aspect_ratio: "16:9", duration_sec: 11.6, scene_plan_version: 1, out_size_bytes: 767369, created_at: new Date(Date.now() - 36e5).toISOString() }]} />;
         })()}
       </div></main>
     </div>

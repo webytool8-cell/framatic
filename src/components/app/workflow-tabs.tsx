@@ -30,9 +30,6 @@ export function WorkflowTabs({ projectId, hasBrand }: { projectId: string; hasBr
           <span key={t.href} aria-disabled className="cursor-not-allowed rounded-md px-3 py-1 text-sm font-semibold text-slate opacity-50">{t.label}</span>
         ),
       )}
-      <span className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm text-slate" title="Planned for a future release">
-        Video <span className="rounded bg-butter px-1.5 text-[10px] font-semibold text-yellow-deep">Soon</span>
-      </span>
     </nav>
   );
 }

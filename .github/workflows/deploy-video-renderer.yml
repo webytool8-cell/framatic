@@ -1,0 +1,77 @@
+# Deploys the MP4 renderer to AWS (Remotion Lambda):
+#   1. the Lambda function that renders frames
+#   2. the bundled video composition ("site") it renders
+# Runs on demand and whenever the video code changes on main.
+# Needs repository secrets REMOTION_AWS_ACCESS_KEY_ID and REMOTION_AWS_SECRET_ACCESS_KEY,
+# and optionally the repository variable REMOTION_AWS_REGION (default us-east-1).
+name: Deploy video renderer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/video/**"
+      - "remotion.config.ts"
+      - "package.json"
+      - "package-lock.json"
+
+concurrency:
+  group: deploy-video-renderer
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REMOTION_AWS_ACCESS_KEY_ID: ${{ secrets.REMOTION_AWS_ACCESS_KEY_ID }}
+      REMOTION_AWS_SECRET_ACCESS_KEY: ${{ secrets.REMOTION_AWS_SECRET_ACCESS_KEY }}
+      REMOTION_AWS_REGION: ${{ vars.REMOTION_AWS_REGION || 'us-east-1' }}
+    steps:
+      - name: Check AWS keys are configured
+        id: keys
+        run: |
+          if [ -z "$REMOTION_AWS_ACCESS_KEY_ID" ] || [ -z "$REMOTION_AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::AWS keys are not set as repository secrets yet, so nothing was deployed. See docs/aws/SETUP.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.keys.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.keys.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.keys.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Deploy Lambda function
+        if: steps.keys.outputs.ready == 'true'
+        run: npx remotion lambda functions deploy --region="$REMOTION_AWS_REGION" --memory=2048 --disk=2048 --timeout=240 --retention-period=7
+
+      - name: Deploy video site
+        if: steps.keys.outputs.ready == 'true'
+        run: npx remotion lambda sites create src/video/remotion/index.ts --site-name=framatic --region="$REMOTION_AWS_REGION"
+
+      - name: Summary
+        if: steps.keys.outputs.ready == 'true'
+        run: |
+          {
+            echo "## Video renderer deployed"
+            echo ""
+            echo "Region: \`$REMOTION_AWS_REGION\`"
+            echo ""
+            echo '```'
+            npx remotion lambda functions ls --region="$REMOTION_AWS_REGION" 2>/dev/null | tail -n 5
+            npx remotion lambda sites ls --region="$REMOTION_AWS_REGION" 2>/dev/null | tail -n 5
+            echo '```'
+            echo ""
+            echo "The app finds the function and site automatically. Make sure the same REMOTION_AWS_* keys are set in Vercel."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -93,10 +93,19 @@ do $$ begin
   end if;
 end $$;
 
+-- Renders are private to their owner
+insert into public.renders (project_id, user_id, concept_id, scene_plan_version, aspect_ratio, duration_sec)
+  select project_id, user_id, id, 1, '16:9', 10 from public.creative_concepts where kind = 'product_in_motion';
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+do $$ begin
+  if (select count(*) from public.renders) <> 0 then raise exception 'bob can see alice renders'; end if;
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+
 -- Cascade: deleting the project deletes concepts and scene plans
 delete from public.projects where id = '10000000-0000-0000-0000-000000000001';
 do $$ begin
-  if (select count(*) from public.creative_concepts) <> 0 or (select count(*) from public.scene_plans) <> 0 then
+  if (select count(*) from public.creative_concepts) <> 0 or (select count(*) from public.scene_plans) <> 0 or (select count(*) from public.renders) <> 0 then
     raise exception 'cascade delete failed';
   end if;
 end $$;

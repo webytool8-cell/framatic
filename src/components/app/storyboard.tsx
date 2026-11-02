@@ -29,7 +29,7 @@ export function StoryboardFrame({ scene, plan, index, logoUrl, className }: { sc
 
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-black/10", RATIO[plan.aspectRatio], className)} style={{ background: bg, color: ink }} aria-label={`Storyboard frame ${index + 1}: ${scene.headline}`} role="img">
-      {scene.background.type === "split" && <div className="absolute inset-y-0 right-0 w-2/5" style={{ background: bg2 }} />}
+      {scene.background.type === "split" && <div className={vertical ? "absolute inset-x-0 bottom-0 h-2/5" : "absolute inset-y-0 right-0 w-2/5"} style={{ background: bg2 }} />}
       {scene.background.type === "grid" && <div className="absolute inset-0 opacity-15" style={{ backgroundImage: `linear-gradient(${ink} 1px, transparent 1px), linear-gradient(90deg, ${ink} 1px, transparent 1px)`, backgroundSize: "14% 14%" }} />}
       {(scene.background.type === "shape_field" || types.has("geometric_sweep") || types.has("shape_burst")) && (
         <>
@@ -48,7 +48,7 @@ export function StoryboardFrame({ scene, plan, index, logoUrl, className }: { sc
           <span className="absolute bottom-1 right-1.5 font-mono text-[8px] uppercase tracking-wider text-black/40">{types.has("product_recording") ? "product recording" : "screenshot"}</span>
         </div>
       )}
-      <div className={cn("absolute flex flex-col justify-center p-[7%]", showsProduct && !vertical ? "inset-y-0 left-0 w-[50%]" : showsProduct ? "inset-x-0 top-0 h-[38%]" : scene.background.type === "split" ? "inset-y-0 left-0 w-[60%]" : "inset-0 items-center text-center")}>
+      <div className={cn("absolute flex flex-col justify-center p-[7%]", showsProduct && !vertical ? "inset-y-0 left-0 w-[50%]" : showsProduct ? "inset-x-0 top-0 h-[38%]" : scene.background.type === "split" ? (vertical ? "inset-x-0 top-0 h-[60%] items-center text-center" : "inset-y-0 left-0 w-[60%]") : "inset-0 items-center text-center")}>
         {(types.has("logo_reveal") || scene.purpose === "cta") && logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt="" referrerPolicy="no-referrer" className="mb-[4%] max-h-[14%] max-w-[40%] object-contain" />

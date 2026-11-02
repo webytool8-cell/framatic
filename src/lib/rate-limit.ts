@@ -1,16 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type UsageKind = "analyze" | "generate" | "regenerate";
+export type UsageKind = "analyze" | "generate" | "regenerate" | "render";
 
 export const LIMITS: Record<UsageKind, { max: number; windowMinutes: number }> = {
   analyze: { max: Number(process.env.FRAMATIC_LIMIT_ANALYZE_PER_HOUR ?? 10), windowMinutes: 60 },
   generate: { max: Number(process.env.FRAMATIC_LIMIT_GENERATE_PER_HOUR ?? 10), windowMinutes: 60 },
   regenerate: { max: Number(process.env.FRAMATIC_LIMIT_REGENERATE_PER_HOUR ?? 40), windowMinutes: 60 },
+  render: { max: Number(process.env.FRAMATIC_LIMIT_RENDER_PER_HOUR ?? 20), windowMinutes: 60 },
 };
 
 export class RateLimitError extends Error {
   constructor(public readonly kind: UsageKind, public readonly retryAfterMinutes: number) {
-    super(`You've reached the hourly limit for ${kind === "analyze" ? "website analyses" : "concept generation"}. Try again in about ${retryAfterMinutes} minutes.`);
+    super(`You've reached the hourly limit for ${kind === "analyze" ? "website analyses" : kind === "render" ? "video exports" : "concept generation"}. Try again in about ${retryAfterMinutes} minutes.`);
     this.name = "RateLimitError";
   }
 }

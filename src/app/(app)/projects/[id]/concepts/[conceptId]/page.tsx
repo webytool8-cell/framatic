@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConceptWorkspace } from "@/components/app/concept-workspace";
 import { isLLMConfigured } from "@/lib/ai/llm";
+import { isRenderConfigured } from "@/lib/render/lambda";
+import type { RenderItem } from "@/components/app/export-panel";
 import { getBrandProfile, getConcept, getProject, listSceneVersions } from "@/lib/db/repo";
 import { requireUser } from "@/lib/supabase/server";
 
@@ -13,6 +15,13 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
   const concept = await getConcept(supabase, user.id, conceptId);
   if (!concept || concept.project_id !== id || !concept.scenePlan) notFound();
   const project = await getProject(supabase, user.id, id);
+  const { data: renderRows } = await supabase
+    .from("renders")
+    .select("id, status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error, created_at")
+    .eq("concept_id", conceptId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(6);
   const [brand, versions] = await Promise.all([
     project?.brand_profile_id ? getBrandProfile(supabase, user.id, project.brand_profile_id) : null,
     listSceneVersions(supabase, user.id, conceptId),
@@ -37,6 +46,8 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
         logoUrl={brand?.profile.identity.logoUrl ?? null}
         productName={brand?.profile.product.name.value || project?.name}
         aiReady={isLLMConfigured()}
+        renderReady={isRenderConfigured()}
+        renders={(renderRows ?? []) as RenderItem[]}
       />
     </div>
   );

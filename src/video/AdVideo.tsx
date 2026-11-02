@@ -50,6 +50,8 @@ function presentationFor(type: Scene["transition"]["type"], width: number, heigh
 /* ---------- backgrounds ---------- */
 function Background({ scene, plan, unit }: { scene: Scene; plan: ScenePlan; unit: number }) {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const portrait = height > width * 1.1;
   const bg = resolveColor(scene.background.color, plan);
   const bg2 = resolveColor(scene.background.secondaryColor ?? "primary", plan);
   const ink = inkOn(bg);
@@ -58,7 +60,11 @@ function Background({ scene, plan, unit }: { scene: Scene; plan: ScenePlan; unit
       const w = interpolate(frame, [0, 12], [0, 40], { extrapolateRight: "clamp", easing: (t) => 1 - Math.pow(1 - t, 3) });
       return (
         <AbsoluteFill style={{ background: bg }}>
-          <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: `${w}%`, background: bg2 }} />
+          {portrait ? (
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `${w}%`, background: bg2 }} />
+          ) : (
+            <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: `${w}%`, background: bg2 }} />
+          )}
         </AbsoluteFill>
       );
     }
@@ -160,7 +166,7 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
           </AbsoluteFill>
         )
       ) : (
-        <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", right: scene.background.type === "split" ? "40%" : 0 }}>{textBlock}</AbsoluteFill>
+        <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", right: scene.background.type === "split" && !portrait ? "40%" : 0, bottom: scene.background.type === "split" && portrait ? "40%" : 0 }}>{textBlock}</AbsoluteFill>
       )}
     </AbsoluteFill>
   );
@@ -171,7 +177,7 @@ export function AdVideo({ plan, logoUrl, productName, screenshotUrl }: AdVideoPr
   const { width, height, fps } = useVideoConfig();
   const timeline = buildTimeline(plan, fps);
   return (
-    <AbsoluteFill style={{ background: plan.palette.paper }}>
+    <AbsoluteFill style={{ background: plan.palette.paper, fontFamily: `"${plan.fonts.body}", "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif` }}>
       <TransitionSeries>
         {plan.scenes.flatMap((scene, i) => {
           const t = timeline.scenes[i];
