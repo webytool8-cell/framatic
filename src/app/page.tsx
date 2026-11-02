@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Composer } from "@/components/app/composer";
-import { WorkspacePreview } from "@/components/landing/workspace-preview";
+import { HeroStage, PlatformStrip } from "@/components/landing/hero-stage";
+import { AdGallery } from "@/components/landing/ad-gallery";
 import { ScenePreview } from "@/components/app/scene-preview";
 import { Logo } from "@/components/ui/shapes";
 import { Tag } from "@/components/ui/status";
-import { samplePlan, sampleVerticalPlan } from "@/lib/samples";
+import { sampleVerticalPlan } from "@/lib/samples";
 import { MusicTeaser } from "@/components/landing/music-teaser";
 
 function Tile({ title, body, children, className = "", soon = false }: { title: string; body: string; children: React.ReactNode; className?: string; soon?: boolean }) {
@@ -18,9 +18,10 @@ function Tile({ title, body, children, className = "", soon = false }: { title: 
 }
 
 /** A full-width band with its own colour, so sections are clearly separated. */
-function Band({ id, tone, children, className = "" }: { id?: string; tone: "hero" | "violet" | "warm" | "fresh" | "night"; children: React.ReactNode; className?: string }) {
+function Band({ id, tone, children, className = "" }: { id?: string; tone: "hero" | "blush" | "violet" | "warm" | "fresh" | "night"; children: React.ReactNode; className?: string }) {
   const tones = {
     hero: "bg-[radial-gradient(1200px_600px_at_0%_0%,#F0EBFF_0%,transparent_60%),radial-gradient(900px_500px_at_100%_20%,#E7F8FD_0%,transparent_55%),linear-gradient(180deg,#FFFFFF_0%,#FFFFFF_100%)]",
+    blush: "bg-[radial-gradient(900px_420px_at_100%_0%,#FFE3EC_0%,transparent_60%),linear-gradient(180deg,#F7F3FF_0%,#FFF4F0_100%)]",
     violet: "bg-[linear-gradient(135deg,#7957FF_0%,#5A3AE6_55%,#4326C2_100%)] text-white",
     warm: "bg-[linear-gradient(180deg,#FFF0E8_0%,#FFF8E1_100%)]",
     fresh: "bg-[linear-gradient(160deg,#E6F9ED_0%,#E7F8FD_100%)]",
@@ -51,6 +52,7 @@ export default function Landing() {
           <div className="flex items-center gap-8">
             <Logo />
             <nav className="hidden items-center gap-1 text-sm text-slate md:flex">
+              <a href="#examples" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Examples</a>
               <a href="#how" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">How it works</a>
               <a href="#features" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Features</a>
               <a href="#sound" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Music</a>
@@ -65,38 +67,34 @@ export default function Landing() {
 
       {/* 1 · Hero */}
       <Band id="start" tone="hero">
-        <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-          <div>
-            <p className="mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium shadow-sm ring-1 ring-black/5">
-              <span className="h-2 w-2 rounded-full bg-lime-deep" />
-              AI video ads for online stores and digital products
-            </p>
-            <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">
-              Your product.
-              <br />
-              A whole new{" "}
-              <span className="relative inline-block whitespace-nowrap">
-                motion.
-                <span aria-hidden className="absolute -bottom-[0.05em] left-[0.04em] h-[0.1em] w-[calc(100%-0.4em)] origin-left animate-[grow_700ms_var(--ease-snap)_400ms_both] rounded-full bg-coral" />
-              </span>
-            </h1>
-            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate">
-              Paste a link to your store, a product page or your app. Framatic turns what you sell into three scroll-stopping video ads: scripted, storyboarded, set to music and ready to post.
-            </p>
-            <div className="mt-10">
-              <Composer />
-            </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate">
-              {["Ads in about a minute", "Built for Reels, TikTok & YouTube", "Shopify, SaaS, apps & courses"].map((t) => (
-                <li key={t} className="flex items-center gap-1.5"><span aria-hidden className="text-lime-deep">✓</span>{t}</li>
-              ))}
-            </ul>
-          </div>
-          <WorkspacePreview plan={samplePlan} />
-        </div>
+        <HeroStage>
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium shadow-sm ring-1 ring-black/5">
+            <span className="h-2 w-2 rounded-full bg-lime-deep" />
+            AI video ads for online stores and digital products
+          </p>
+          <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">
+            Your product.
+            <br />
+            A whole new{" "}
+            <span className="relative inline-block whitespace-nowrap">
+              motion.
+              <span aria-hidden className="absolute -bottom-[0.05em] left-[0.04em] h-[0.1em] w-[calc(100%-0.4em)] origin-left animate-[grow_700ms_var(--ease-snap)_400ms_both] rounded-full bg-coral" />
+            </span>
+          </h1>
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate">
+            Paste a link to your store, a product page or your app. Framatic turns what you sell into three scroll-stopping video ads: scripted, storyboarded, set to music and ready to post.
+          </p>
+        </HeroStage>
+        <PlatformStrip />
       </Band>
 
-      {/* 2 · How it works */}
+      {/* 2 · Gallery */}
+      <Band id="examples" tone="blush">
+        <SectionHead kicker="Made with Framatic" title="Real output, playing live" body="Four sample products, four placements. These aren't screen recordings: each ad is rendered right now by the same engine that exports your MP4. Brands are fictional." />
+        <AdGallery />
+      </Band>
+
+      {/* 3 · How it works */}
       <Band id="how" tone="violet">
         <SectionHead light kicker="How it works" title="One product link in. Three ads out." body="You bring what you sell. The AI does the reading, the copywriting and the storyboarding." />
         <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -115,7 +113,7 @@ export default function Landing() {
         </ol>
       </Band>
 
-      {/* 3 · Features */}
+      {/* 4 · Features */}
       <Band id="features" tone="warm">
         <SectionHead kicker="Features" title="From product page to ready-to-run ad" body="Everything happens in one workspace. Examples use a fictional store." />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -224,13 +222,13 @@ export default function Landing() {
         </div>
       </Band>
 
-      {/* 4 · Sound */}
+      {/* 5 · Sound */}
       <Band id="sound" tone="fresh">
         <SectionHead kicker="Music & sound" title="Sounds as good as it looks" body="Every ad gets a track that fits the product. Cuts and transitions land on the beat, and the music sits under your message. Press play." />
         <MusicTeaser />
       </Band>
 
-      {/* 5 · Closing */}
+      {/* 6 · Closing */}
       <Band tone="night">
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">

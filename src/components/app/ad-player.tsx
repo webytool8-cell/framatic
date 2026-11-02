@@ -19,6 +19,7 @@ export default function AdPlayer({
   className,
   onFrame,
   seekTo,
+  startFrame,
 }: {
   plan: ScenePlan;
   logoUrl?: string | null;
@@ -29,6 +30,8 @@ export default function AdPlayer({
   className?: string;
   onFrame?: (frame: number) => void;
   seekTo?: { frame: number; id: number } | null;
+  /** Frame to start from (used to stagger several autoplaying previews). */
+  startFrame?: number;
 }) {
   const ref = useRef<PlayerRef>(null);
   const { width, height } = DIMENSIONS[plan.aspectRatio];
@@ -72,7 +75,9 @@ export default function AdPlayer({
       // Autoplaying previews start muted so browsers allow them; click-to-play ones have sound.
       initiallyMuted={autoPlay}
       // Show a frame where the first scene has animated in, not a blank start.
-      initialFrame={autoPlay ? 0 : Math.min(30, durationInFrames - 1)}
+      initialFrame={startFrame !== undefined ? Math.min(startFrame, durationInFrames - 1) : autoPlay ? 0 : Math.min(30, durationInFrames - 1)}
+      // Music + up to two transition sounds + one-shot cues: more than Remotion's default of 5 tags.
+      numberOfSharedAudioTags={12}
       acknowledgeRemotionLicense
       clickToPlay
       style={{ width: "100%", aspectRatio: `${width} / ${height}`, borderRadius: 12, overflow: "hidden" }}
