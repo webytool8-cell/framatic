@@ -38,7 +38,7 @@ function brandFor(d: Def): BrandProfile {
   b.identity.primaryColor = d.colors[0];
   b.identity.secondaryColors = [d.colors[1]];
   b.identity.accentColors = [d.colors[2]];
-  b.identity.typography = { heading: "Space Grotesk", body: "Space Grotesk", provenance: "extracted" };
+  b.identity.typography = { heading: "Archivo", body: "Archivo", provenance: "extracted" };
   return b;
 }
 
@@ -66,7 +66,7 @@ const DEFS: Def[] = [
     host: "lumenmug.example",
     kind: "Physical product",
     colors: ["#E8572A", "#2B2D42", "#F2C14E"],
-    meta: "Space Grotesk · light · $39",
+    meta: "Archivo · light · $39",
     facts: [
       { label: "Promise", value: "Your coffee, hot for 3 hours", tone: "verified" },
       { label: "Feature", value: "Dishwasher-safe lid", tone: "verified" },
@@ -93,7 +93,7 @@ const DEFS: Def[] = [
     host: "loopnote.example",
     kind: "App / SaaS",
     colors: ["#3B5BFF", "#0F172A", "#22D3A5"],
-    meta: "Space Grotesk · bold · Free trial",
+    meta: "Archivo · bold · Free trial",
     facts: [
       { label: "Promise", value: "Habits that stick, 2 minutes a day", tone: "verified" },
       { label: "Feature", value: "Daily streak reminders", tone: "verified" },
@@ -120,7 +120,7 @@ const DEFS: Def[] = [
     host: "kilnathome.example",
     kind: "Online course",
     colors: ["#2F6F4F", "#1F2937", "#F4A261"],
-    meta: "Space Grotesk · warm · $79 course",
+    meta: "Archivo · warm · $79 course",
     facts: [
       { label: "Promise", value: "Make your first bowl this weekend", tone: "verified" },
       { label: "Feature", value: "24 short video lessons", tone: "verified" },
@@ -147,7 +147,7 @@ const DEFS: Def[] = [
     host: "dewly.example",
     kind: "Beauty product",
     colors: ["#E86A92", "#3D2C3E", "#FFD6E0"],
-    meta: "Space Grotesk · soft · $28",
+    meta: "Archivo · soft · $28",
     facts: [
       { label: "Promise", value: "Glow you can see in a week", tone: "verified" },
       { label: "Feature", value: "Fragrance-free formula", tone: "verified" },

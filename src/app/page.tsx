@@ -55,7 +55,7 @@ export default function Landing() {
             <span className="h-2 w-2 rounded-full bg-lime-deep" />
             AI video ads for online stores and digital products
           </p>
-          <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">
+          <h1 className="text-display text-[clamp(2.4rem,4.2vw,3.6rem)]">
             Your product.
             <br />
             A whole new{" "}

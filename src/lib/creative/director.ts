@@ -166,7 +166,7 @@ export function finalizeConcept(ai: AIConcept, brand: BrandProfile, prefs: Creat
       aspectRatio: prefs.aspectRatio,
       palette: paletteFor(brand),
       fonts: {
-        heading: brand.identity.typography.heading || "Space Grotesk",
+        heading: brand.identity.typography.heading || "Archivo",
         body: brand.identity.typography.body || brand.identity.typography.heading || "Inter",
       },
     },

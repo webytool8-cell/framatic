@@ -60,17 +60,13 @@ export function Dots({ className, color = "#202124" }: { className?: string; col
   );
 }
 
-/** Framatic wordmark: a "frame" built from four geometric pieces. */
+/** Framatic logo: the outlined "F" mark with the wordmark set in heavy, wide Archivo. */
 export function Logo({ className, mono = false }: { className?: string; mono?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-2 font-bold tracking-tight text-ink", className)}>
-      <svg aria-hidden viewBox="0 0 32 32" className="h-7 w-7">
-        <rect x="2" y="2" width="13" height="13" rx="3" fill={mono ? "#202124" : "#7957FF"} />
-        <circle cx="23.5" cy="8.5" r="6.5" fill={mono ? "#202124" : "#FF6B6B"} />
-        <path d="M2 30 A13 13 0 0 1 15 17 L15 30 Z" fill={mono ? "#202124" : "#39C6E8"} />
-        <rect x="17" y="17" width="13" height="13" rx="6.5" fill={mono ? "#202124" : "#C5F467"} />
-      </svg>
-      <span className="text-[19px]">framatic</span>
+    <span className={cn("inline-flex items-center gap-2 text-ink", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG, no optimisation needed */}
+      <img src="/logo.svg" alt="" aria-hidden width={18} height={28} className={cn("h-8 w-auto", mono && "grayscale")} />
+      <span className="text-[20px] leading-none tracking-[-0.02em]" style={{ fontWeight: 800, fontStretch: "112%" }}>framatic</span>
     </span>
   );
 }

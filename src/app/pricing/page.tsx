@@ -53,7 +53,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           )}
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <p className="mb-3 text-sm font-semibold text-violet-deep">Pricing</p>
-            <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">Pay for ads, not seats.</h1>
+            <h1 className="text-display text-[clamp(2.4rem,4.2vw,3.6rem)]">Pay for ads, not seats.</h1>
             <p className="mt-5 text-lg leading-relaxed text-slate">Every plan comes with monthly credits for AI work. Start free with no credit card, and pick a bigger plan when you&apos;re running more ads.</p>
           </div>
           <PricingTable signedIn={signedIn} currentPlan={balance?.plan === "unlimited" ? null : (balance?.plan ?? null)} />

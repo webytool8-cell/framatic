@@ -130,11 +130,11 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
           text={scene.headline}
           anim={scene.animation}
           accent={plan.palette.accent === bg ? plan.palette.primary : plan.palette.accent}
-          style={{ fontFamily: `"${plan.fonts.heading}", "Space Grotesk Variable", system-ui, sans-serif`, fontWeight: 700, fontSize: headlineSize, lineHeight: 0.98, letterSpacing: "-0.035em", color: ink, maxWidth: hasProduct && !portrait ? "100%" : "88%" }}
+          style={{ fontFamily: `"${plan.fonts.heading}", "Archivo Variable", system-ui, sans-serif`, fontWeight: 700, fontSize: headlineSize, lineHeight: 0.98, letterSpacing: "-0.035em", color: ink, maxWidth: hasProduct && !portrait ? "100%" : "88%" }}
         />
       )}
       {scene.supportingText && (
-        <div style={{ fontFamily: `"${plan.fonts.body}", "Space Grotesk Variable", system-ui, sans-serif`, fontSize: unit * 3, lineHeight: 1.3, color: ink, opacity: subOpacity * 0.82, maxWidth: "80%" }}>{scene.supportingText}</div>
+        <div style={{ fontFamily: `"${plan.fonts.body}", "Archivo Variable", system-ui, sans-serif`, fontSize: unit * 3, lineHeight: 1.3, color: ink, opacity: subOpacity * 0.82, maxWidth: "80%" }}>{scene.supportingText}</div>
       )}
       {callouts.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: unit * 1.2, justifyContent: textAlign === "left" ? "flex-start" : "center" }}>
@@ -224,7 +224,7 @@ export function AdVideo({ plan, logoUrl, productName, screenshotUrl }: AdVideoPr
   const { width, height, fps } = useVideoConfig();
   const timeline = buildTimeline(plan, fps);
   return (
-    <AbsoluteFill style={{ background: plan.palette.paper, fontFamily: `"${plan.fonts.body}", "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif` }}>
+    <AbsoluteFill style={{ background: plan.palette.paper, fontFamily: `"${plan.fonts.body}", "Archivo Variable", "Archivo", system-ui, sans-serif` }}>
       <Soundtrack plan={plan} />
       <TransitionSeries>
         {plan.scenes.flatMap((scene, i) => {

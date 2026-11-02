@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import "@fontsource-variable/space-grotesk";
+/* Archivo: weight 100–900 and width 62–125%. Headings use it heavy and a little wide to match the logo. */
+@import "@fontsource-variable/archivo/standard.css";
 @import "@fontsource-variable/jetbrains-mono";
 
 /*
@@ -8,7 +9,7 @@
   coral / cyan / lime / yellow used selectively for meaning.
 */
 @theme {
-  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
   --color-paper: #ffffff;
@@ -74,7 +75,6 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings: "ss01", "ss02";
 }
 
 ::selection {
@@ -91,13 +91,15 @@ body {
 
 /* Display type */
 .text-display {
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-weight: 800;
+  font-stretch: 112%;
+  letter-spacing: -0.03em;
   line-height: 0.95;
 }
 .text-heading {
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 750;
+  font-stretch: 106%;
+  letter-spacing: -0.015em;
   line-height: 1.1;
 }
 .label-tech {
