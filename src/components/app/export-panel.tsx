@@ -1,5 +1,4 @@
 "use client";
-import { CREDIT_COST } from "@/lib/plans";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -19,7 +18,7 @@ export interface RenderItem {
 const time = new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", month: "short", day: "numeric" });
 
 /** Export the saved concept to MP4 through the cloud renderer, with live progress. */
-export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio, durationSec, hasUnsaved }: { conceptId: string; enabled: boolean; initial: RenderItem[]; version: number; aspectRatio: string; durationSec: number; hasUnsaved: boolean }) {
+export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio, durationSec, hasUnsaved, renderCost = 1 }: { conceptId: string; enabled: boolean; initial: RenderItem[]; version: number; aspectRatio: string; durationSec: number; hasUnsaved: boolean; renderCost?: number }) {
   const [items, setItems] = useState<RenderItem[]>(initial);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +41,7 @@ export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio,
   async function start() {
     setStarting(true);
     setError(null);
-    const res = await fetch(`/api/concepts/${conceptId}/renders`, { method: "POST" }).catch(() => null);
+    const res = await fetch(`/api/concepts/${conceptId}/renders`, { method: "POST", headers: { "idempotency-key": crypto.randomUUID() } }).catch(() => null);
     const body = res ? await res.json().catch(() => ({})) : {};
     setStarting(false);
     if (!res?.ok) return setError(body.error ?? "Couldn't start the export. Please try again.");
@@ -68,7 +67,7 @@ export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio,
             {starting ? "Starting export…" : "Export MP4"}
           </Button>
           <p className="mt-2 text-xs text-slate">
-            Renders the saved version (v{version}) in the cloud, usually in about a minute. Uses {CREDIT_COST.render} credit.
+            Renders the saved version (v{version}) in the cloud, usually in about a minute. Uses {renderCost} credit{renderCost === 1 ? "" : "s"}.
             {hasUnsaved && <span className="text-coral-deep"> You have unsaved edits; save first to include them.</span>}
           </p>
         </>

@@ -4,7 +4,8 @@ import { FakeDB } from "./fake-supabase";
 import { aiBrandFixture, aiConceptFixture, FakeLLM, fixtureFetcher } from "./helpers";
 import { setLLMForTesting } from "@/lib/ai/llm";
 import { listConcepts, getBrandProfile, getProject } from "@/lib/db/repo";
-import { consumeRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { RateLimitError } from "@/lib/rate-limit";
+import { reserveCredits, settleCredits } from "@/lib/credits";
 
 import { analyzeProject as analyze } from "@/lib/jobs/analyze-project";
 import { generateAllConcepts, regenerateConcept } from "@/lib/jobs/concepts";
@@ -120,8 +121,11 @@ describe("end-to-end workflow (website → brand → concepts → refine)", () =
   it("enforces per-user rate limits", async () => {
     // Hourly limit only: a big plan has credits to spare (credits are tested in usage.test.ts).
     fake.table("user_plans").push({ user_id: USER, plan: "studio" });
-    for (let i = 0; i < 10; i++) await consumeRateLimit(db, USER, "analyze");
-    await expect(consumeRateLimit(db, USER, "analyze")).rejects.toBeInstanceOf(RateLimitError);
-    await expect(consumeRateLimit(db, "someone-else", "analyze")).resolves.toBeUndefined();
+    for (let i = 0; i < 10; i++) {
+      const hold = await reserveCredits(db, USER, "analyze", { ref: `p-${i}` });
+      await settleCredits(db, hold.reservationId, 10, "completed");
+    }
+    await expect(reserveCredits(db, USER, "analyze", { ref: "p-x" })).rejects.toBeInstanceOf(RateLimitError);
+    await expect(reserveCredits(db, "someone-else", "analyze", { ref: "p-y" })).resolves.toMatchObject({ created: true });
   });
 });

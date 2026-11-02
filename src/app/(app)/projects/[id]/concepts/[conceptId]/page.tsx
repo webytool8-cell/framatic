@@ -1,3 +1,4 @@
+import { getCreditCosts } from "@/lib/billing-config";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConceptWorkspace } from "@/components/app/concept-workspace";
@@ -43,6 +44,7 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
           plan: concept.scenePlan,
         }}
         versions={versions}
+        creditCosts={await getCreditCosts(supabase)}
         logoUrl={brand?.profile.identity.logoUrl ?? null}
         productName={brand?.profile.product.name.value || project?.name}
         aiReady={isLLMConfigured()}

@@ -4,7 +4,9 @@ import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { REGENERATABLE_FIELDS } from "@/lib/creative/concept";
 import { getConcept } from "@/lib/db/repo";
 import { regenerateConcept } from "@/lib/jobs/concepts";
-import { consumeRateLimit, refundLatestCharge } from "@/lib/rate-limit";
+import { reserveCredits, settleOperation } from "@/lib/credits";
+import { recordComputeCost } from "@/lib/metering";
+import { OperationInProgressError } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export const maxDuration = 180;
@@ -26,14 +28,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (concept.status === "regenerating") return jsonError("This concept is already regenerating.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "regenerate", id);
+    const hold = await reserveCredits(admin, user.id, "regenerate", { ref: id, idempotencyKey: req.headers.get("idempotency-key") });
+    if (!hold.created) throw new OperationInProgressError("regenerate");
+    const t0 = Date.now();
     let changed;
     try {
-      changed = await regenerateConcept(admin, user.id, id, { only: body.data.fields, instruction: body.data.instruction });
+      changed = await regenerateConcept(admin, user.id, id, { only: body.data.fields, instruction: body.data.instruction, operationId: hold.reservationId });
     } catch (e) {
-      await refundLatestCharge(admin, user.id, id, "regenerate failed");
+      await settleOperation(admin, hold.reservationId, "regenerate", { kind: "failed" }, { conceptId: id });
       throw e;
+    } finally {
+      await recordComputeCost(admin, user.id, hold.reservationId, "regenerate", Date.now() - t0);
     }
+    await settleOperation(admin, hold.reservationId, "regenerate", { kind: "done" }, { conceptId: id });
     return NextResponse.json({ changed });
   } catch (e) {
     return handleRouteError(e, "regenerate");

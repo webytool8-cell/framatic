@@ -3,8 +3,9 @@ import { SettingsForm } from "@/components/app/settings-form";
 import { SimpleForm } from "@/components/app/simple-form";
 import { changeEmail, changePassword, deleteAccount } from "@/app/actions/account";
 import { requireUser } from "@/lib/supabase/server";
-import { CreditsCard, type CreditActivity } from "@/components/app/credits-card";
-import { creditBalance } from "@/lib/plans";
+import { CreditsCard, toActivity, type LedgerRow } from "@/components/app/credits-card";
+import { getBalance } from "@/lib/credits";
+import { createServiceClient } from "@/lib/supabase/server";
 import { leaveUnlimited, redeemAccessCode } from "@/app/actions/credits";
 import { isAdminEmail } from "@/lib/admin";
 import Link from "next/link";
@@ -15,10 +16,19 @@ export default async function Settings() {
   const { supabase, user } = await requireUser();
   const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
   const viaGoogle = user.app_metadata?.provider === "google";
-  const balance = await creditBalance(supabase, user.id).catch(() => null);
-  const { data: activity } = balance
-    ? await supabase.from("usage_events").select("id, kind, credits, created_at").eq("user_id", user.id).neq("credits", 0).gte("created_at", balance.periodStart.toISOString()).order("created_at", { ascending: false }).limit(8)
+  const balance = await getBalance(createServiceClient(), user.id).catch(() => null);
+  // Ledger rows the user can read (RLS): charges, failed operations (not charged) and allocations.
+  const { data: ledger } = balance
+    ? await supabase
+        .from("credit_transactions")
+        .select("id, type, operation, amount, list_credits, reason, created_at")
+        .eq("user_id", user.id)
+        .in("type", ["capture", "release", "allocation", "expiry", "purchase", "adjustment", "refund"])
+        .gte("created_at", balance.periodStart.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(30)
     : { data: [] };
+  const activity = toActivity((ledger ?? []) as LedgerRow[]).slice(0, 8);
   return (
     <div className="max-w-3xl space-y-8">
       <div>
@@ -34,7 +44,7 @@ export default async function Settings() {
             title="Plan & credits"
             action={isAdminEmail(user.email) ? <Link href="/admin/usage" className="text-sm font-semibold text-violet-deep hover:underline">Usage & cost for all users →</Link> : undefined}
           >
-            <CreditsCard balance={balance} activity={(activity ?? []) as CreditActivity[]} />
+            <CreditsCard balance={balance} activity={activity} />
             <div className="mt-8 border-t border-line pt-6">
               {balance.unlimited ? (
                 <div className="max-w-sm">

@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeLLMError, getLLM } from "@/lib/ai/llm";
 import { dbMeter } from "@/lib/ai/usage";
-import { refundLatestCharge } from "@/lib/rate-limit";
 import { CONCEPT_KINDS, CONCEPT_META, CreativePreferences, REGENERATABLE_FIELDS, mergeConcept, type ConceptKind, type RegeneratableField } from "@/lib/creative/concept";
 import { preferencesFromInstruction } from "@/lib/brief";
 import { generateConcept } from "@/lib/creative/director";
@@ -23,7 +22,7 @@ export async function resolvePreferences(db: SupabaseClient, userId: string, pro
  * Background job: generate (or refresh) all three concepts.
  * Existing concepts are refreshed with user edits preserved.
  */
-export async function generateAllConcepts(db: SupabaseClient, userId: string, projectId: string): Promise<void> {
+export async function generateAllConcepts(db: SupabaseClient, userId: string, projectId: string, operationId?: string): Promise<number> {
   try {
     const project = await getProject(db, userId, projectId);
     if (!project?.brand_profile_id) throw new UserFacingError("Analyze the link or complete the brand profile first.");
@@ -36,7 +35,7 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
       CONCEPT_KINDS.map(async (kind) => {
         const current = existing.find((c) => c.kind === kind);
         const conceptPrefs = current ? CreativePreferences.parse({ ...prefs, ...current.preferences }) : prefs;
-        const llm = getLLM("creative", dbMeter({ db, userId, projectId, conceptId: current?.id, step: `concept:${kind}` }));
+        const llm = getLLM("creative", dbMeter({ db, userId, projectId, conceptId: current?.id, operationId, step: `concept:${kind}` }));
         const fresh = await generateConcept(llm, {
           kind,
           brand: brand.profile,
@@ -65,13 +64,14 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
       userId,
       projectId,
       "concepts_ready",
-      failed.length ? `${failed.length} of 3 concepts couldn't be generated. Use "Regenerate" on the missing concept to try again.` : null,
+      failed.length ? `${failed.length} of 3 concepts couldn't be generated (you weren't charged for ${failed.length === 1 ? "it" : "them"}). Use "Regenerate" on the missing concept to try again.` : null,
     );
+    return CONCEPT_KINDS.length - failed.length;
   } catch (e) {
     const message = e instanceof UserFacingError ? e.message : friendly(e);
     log.error("generate all failed", { projectId, error: (e as Error).message });
     await setProjectStatus(db, userId, projectId, "generation_failed", message);
-    await refundLatestCharge(db, userId, projectId, "concept generation failed");
+    return 0;
   }
 }
 
@@ -109,7 +109,7 @@ export async function regenerateConcept(
   db: SupabaseClient,
   userId: string,
   conceptId: string,
-  opts: { only?: RegeneratableField[]; instruction?: string } = {},
+  opts: { only?: RegeneratableField[]; instruction?: string; operationId?: string } = {},
 ) {
   const instruction = opts.instruction?.trim() || undefined;
   const only = instruction ? undefined : opts.only;
@@ -128,7 +128,7 @@ export async function regenerateConcept(
       await db.from("creative_concepts").update({ preferences: { ...concept.preferences, ...hinted } }).eq("id", conceptId).eq("user_id", userId);
     }
     const step = instruction ? "edit" : only?.length ? "rewrite_fields" : "regenerate";
-    const llm = getLLM("creative", dbMeter({ db, userId, projectId: concept.project_id, conceptId, step }));
+    const llm = getLLM("creative", dbMeter({ db, userId, projectId: concept.project_id, conceptId, operationId: opts.operationId, step }));
     const fresh = await generateConcept(llm, {
       kind: concept.kind,
       brand: brand.profile,

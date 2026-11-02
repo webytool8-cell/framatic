@@ -1,4 +1,4 @@
-import { CREDIT_COST } from "@/lib/plans";
+import { getCreditCosts } from "@/lib/billing-config";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/form";
 import { Arc, Circle } from "@/components/ui/shapes";
@@ -14,6 +14,7 @@ import { effectiveStatus } from "@/lib/types";
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase, user } = await requireUser();
+  const costs = await getCreditCosts(supabase);
   const project = (await getProject(supabase, user.id, id))!;
   const { status, message } = effectiveStatus(project);
   const aiReady = isLLMConfigured();
@@ -43,7 +44,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <h2 className="text-heading mb-3 text-2xl">We couldn&apos;t read this page</h2>
         <p className="mb-6 text-slate">{message ?? "Something went wrong."}</p>
         <div className="flex flex-wrap gap-3">
-          {project.website_url && <JobRunner projectId={id} kind="autopilot" status={status} label={`Try again · ${CREDIT_COST.analyze} credits`} />}
+          {project.website_url && <JobRunner projectId={id} kind="autopilot" status={status} label={`Try again · ${costs.analyze} credits`} />}
           <ManualFallbackButton projectId={id} label="Describe the brand myself" />
         </div>
       </Card>
@@ -62,7 +63,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <p className="relative mb-6 max-w-lg text-slate">Next, we&apos;ll write three different ad concepts with full storyboards.</p>
           {status === "generation_failed" && message && <Alert className="relative mb-4">{message}</Alert>}
           {aiReady ? (
-            <div className="relative"><JobRunner projectId={id} kind="generate" status={status} label={`Write my ad concepts · ${CREDIT_COST.generate} credits`} /></div>
+            <div className="relative"><JobRunner projectId={id} kind="generate" status={status} label={`Write my ad concepts · ${costs.generate} credits`} /></div>
           ) : (
             <Alert tone="info" className="relative">AI writing isn&apos;t switched on for this server yet (missing <code className="font-mono">ANTHROPIC_API_KEY</code>). Your brand profile is saved and editable.</Alert>
           )}
@@ -81,7 +82,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <h2 className="text-heading text-lg">3 concepts</h2>
           <p className="text-sm text-slate">Open one to tweak it. Frames are storyboard sketches, not rendered video.</p>
         </div>
-        {aiReady && !streaming && <JobRunner projectId={id} kind="generate" status={status} label={`Try three new ones · ${CREDIT_COST.generate} credits`} variant="secondary" />}
+        {aiReady && !streaming && <JobRunner projectId={id} kind="generate" status={status} label={`Try three new ones · ${costs.generate} credits`} variant="secondary" />}
       </div>
       {streaming && <JobRunner projectId={id} kind="autopilot" status={status} message={message} label="" compact />}
       {message && !generating && <Alert tone={status === "generation_failed" ? "error" : "warning"}>{message}</Alert>}

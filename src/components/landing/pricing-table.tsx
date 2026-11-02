@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { PLANS, PUBLIC_PLANS, projectsPerMonth, type PlanId } from "@/lib/plans";
+import { CREDIT_COST, PLANS, PUBLIC_PLANS, projectsPerMonth, type CreditCosts, type PlanId } from "@/lib/plans";
 import { cn } from "@/lib/cn";
 import { Spark } from "@/components/ui/shapes";
 
@@ -16,7 +16,7 @@ const ACCENT: Record<string, { ring: string; chip: string; bar: string }> = {
  * Plan cards with a monthly/yearly switch. Checkout isn't wired yet (Stripe
  * comes later), so paid plans start on Free and say upgrades open soon.
  */
-export function PricingTable({ signedIn, currentPlan }: { signedIn: boolean; currentPlan: PlanId | null }) {
+export function PricingTable({ signedIn, currentPlan, costs = CREDIT_COST }: { signedIn: boolean; currentPlan: PlanId | null; costs?: CreditCosts }) {
   const [yearly, setYearly] = useState(true);
   const maxCredits = Math.max(...PUBLIC_PLANS.map((p) => PLANS[p].credits));
 
@@ -76,7 +76,7 @@ export function PricingTable({ signedIn, currentPlan }: { signedIn: boolean; cur
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#ECECF2]">
                   <div className={cn("h-full rounded-full", a.bar)} style={{ width: `${Math.max(3, (p.credits / maxCredits) * 100)}%` }} />
                 </div>
-                <p className="mt-2 text-xs text-slate">About {projectsPerMonth(p.credits).toLocaleString()} ad project{projectsPerMonth(p.credits) === 1 ? "" : "s"} with edits and exports</p>
+                <p className="mt-2 text-xs text-slate">About {projectsPerMonth(p.credits, costs).toLocaleString()} ad project{projectsPerMonth(p.credits, costs) === 1 ? "" : "s"} with edits and exports</p>
               </div>
 
               <ul className="mt-5 flex-1 space-y-2 text-sm">

@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { getBrandProfile, getConcept, getProject } from "@/lib/db/repo";
 import { log } from "@/lib/log";
-import { RateLimitError, chargeCredits, refundLatestCharge, setChargeRef } from "@/lib/rate-limit";
+import { reserveCredits, settleOperation } from "@/lib/credits";
+import { recordRenderCosts } from "@/lib/metering";
+import { OperationInProgressError } from "@/lib/rate-limit";
 import { describeRenderError, isRenderConfigured, startCloudRunRender } from "@/lib/render/cloudrun";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -15,7 +17,7 @@ function slug(s: string) {
 const COLUMNS = "id, status, progress, aspect_ratio, duration_sec, scene_plan_version, out_size_bytes, error, created_at";
 
 /** Start an MP4 export of the concept's saved scene plan. */
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { supabase, user } = await routeUser();
@@ -27,19 +29,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const brand = project?.brand_profile_id ? await getBrandProfile(supabase, user.id, project.brand_profile_id) : null;
 
     const admin = createServiceClient();
-    const chargeId = await chargeCredits(admin, user.id, "render", id);
+    // One export of a given saved version at a time; a repeated click reuses the hold.
+    const hold = await reserveCredits(admin, user.id, "render", { ref: `${id}:v${concept.current_version}`, idempotencyKey: req.headers.get("idempotency-key") });
+    if (!hold.created) throw new OperationInProgressError("render");
     const plan = concept.scenePlan;
     const fileName = `${slug(concept.content.title)}-${plan.aspectRatio.replace(":", "x")}.mp4`;
     const { data: row, error } = await supabase
       .from("renders")
-      .insert({ user_id: user.id, project_id: concept.project_id, concept_id: id, scene_plan_version: concept.current_version, aspect_ratio: plan.aspectRatio, duration_sec: plan.durationSec, file_name: fileName })
+      .insert({ user_id: user.id, project_id: concept.project_id, concept_id: id, scene_plan_version: concept.current_version, aspect_ratio: plan.aspectRatio, duration_sec: plan.durationSec, file_name: fileName, operation_id: hold.reservationId })
       .select(COLUMNS)
       .single();
     if (error) {
-      await refundLatestCharge(admin, user.id, id, "render row insert failed");
+      await settleOperation(admin, hold.reservationId, "render", { kind: "failed" }, { conceptId: id });
       throw error;
     }
-    if (chargeId !== null) await setChargeRef(admin, chargeId, `render:${row.id}`);
 
     try {
       const execution = await startCloudRunRender({
@@ -53,12 +56,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       log.error("render start failed", { conceptId: id, error: (e as Error).message });
       const message = describeRenderError(e);
       await supabase.from("renders").update({ status: "failed", error: message }).eq("id", row.id).eq("user_id", user.id);
-      await refundLatestCharge(admin, user.id, `render:${row.id}`, "render start failed");
+      const settled = await settleOperation(admin, hold.reservationId, "render", { kind: "failed" }, { renderId: row.id });
+      if (!settled.alreadySettled) await recordRenderCosts(admin, { userId: user.id, operationId: hold.reservationId, renderId: row.id, seconds: 0, sizeBytes: null, done: false });
       return jsonError(message, 502);
     }
     return NextResponse.json(row, { status: 202 });
   } catch (e) {
-    if (e instanceof RateLimitError) return jsonError(e.message, 429);
     return handleRouteError(e, "render start");
   }
 }

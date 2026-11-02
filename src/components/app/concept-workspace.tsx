@@ -1,5 +1,5 @@
 "use client";
-import { CREDIT_COST } from "@/lib/plans";
+import { CREDIT_COST, type CreditCosts } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { restoreSceneVersion, setPreferredConcept, updateConceptContent, updateConceptPreferences, updateMusic, updateScenes } from "@/app/actions/concepts";
@@ -38,6 +38,8 @@ type Props = {
     plan: ScenePlan;
   };
   versions: Array<{ version: number; source: string; created_at: string }>;
+  /** Live credit costs (from billing config). */
+  creditCosts?: CreditCosts;
   logoUrl: string | null;
   productName?: string;
   aiReady: boolean;
@@ -50,7 +52,7 @@ const LONG: EditableField[] = ["description", "rationale", "supportingCopy", "vi
 const ADVANCED_FIELDS: EditableField[] = ["title", "campaignObjective", "description", "targetAudience", "rationale", "visualDirection", "typographyDirection", "musicMood", "pacing"];
 const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [] }: Props) {
+export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [], creditCosts = CREDIT_COST }: Props) {
   const router = useRouter();
   const meta = CONCEPT_META[concept.kind];
   const [content, setContent] = useState(concept.content);
@@ -93,7 +95,8 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
   async function regenerate(body: { fields?: RegeneratableField[]; instruction?: string }) {
     const res = await fetch(`/api/concepts/${concept.id}/regenerate`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      // A fresh key per click: a retried request can't be charged twice.
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify(body),
     });
     const json = await res.json().catch(() => ({}));
@@ -256,7 +259,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
 
         {/* Right rail: ask + key copy */}
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-          <ExportPanel conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
+          <ExportPanel renderCost={creditCosts.render} conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
           {aiReady && (
             <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white p-4 shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="ask-title">
               <h3 id="ask-title" className="text-heading mb-2 text-lg">Ask for changes</h3>
@@ -279,7 +282,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                 <Button type="submit" className="w-full" disabled={aiBusy || anyDirty || ask.trim().length < 2}>
                   {busy === "ask" ? "Reworking the concept…" : "Apply changes"}
                 </Button>
-                <p className="mt-2 text-xs text-slate">{anyDirty ? "Save your edits first." : `Each AI change uses ${CREDIT_COST.regenerate} credits. Your own edits are free.`}</p>
+                <p className="mt-2 text-xs text-slate">{anyDirty ? "Save your edits first." : `Each AI change uses ${creditCosts.regenerate} credits. Your own edits are free.`}</p>
               </form>
             </section>
           )}

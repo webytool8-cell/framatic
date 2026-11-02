@@ -63,6 +63,8 @@ export type UsageContext = {
   userId: string;
   projectId?: string | null;
   conceptId?: string | null;
+  /** The credit operation (reservation id) this call belongs to. */
+  operationId?: string | null;
   /** What the call was for: analysis, concept:problem_solution, regenerate, edit… */
   step: string;
 };
@@ -74,6 +76,7 @@ export function dbMeter(ctx: UsageContext): UsageMeter {
       user_id: ctx.userId,
       project_id: ctx.projectId ?? null,
       concept_id: ctx.conceptId ?? null,
+      operation_id: ctx.operationId ?? null,
       step: ctx.step,
       model: r.model,
       attempt: r.attempt,

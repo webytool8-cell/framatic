@@ -5,6 +5,7 @@ grant usage, select on all sequences in schema public to authenticated;
 -- Supabase grants new tables to API roles on creation and migrations then revoke;
 -- the blanket grant above runs later, so re-apply the migration's revoke.
 revoke all on public.usage_cost_monthly from anon, authenticated;
+revoke insert, update, delete on public.credit_transactions from anon, authenticated;
 grant select, insert, update, delete on storage.objects to authenticated;
 
 insert into auth.users (id, email) values

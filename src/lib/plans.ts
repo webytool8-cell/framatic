@@ -11,6 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 export type PlanId = "free" | "starter" | "pro" | "studio" | "unlimited";
 export type ChargeKind = "analyze" | "generate" | "regenerate" | "render";
+export type CreditCosts = Record<ChargeKind, number>;
 
 export type Plan = {
   id: PlanId;
@@ -77,8 +78,11 @@ export const PLANS: Record<PlanId, Plan> = {
 /** Plans shown on the pricing page, in order. */
 export const PUBLIC_PLANS: PlanId[] = ["free", "starter", "pro", "studio"];
 
-/** Credits each action costs. */
-export const CREDIT_COST: Record<ChargeKind, number> = {
+/**
+ * Default credits per action. The live values come from billing_config
+ * (editable on /admin/usage) via getCreditCosts(); these are the fallback.
+ */
+export const CREDIT_COST: CreditCosts = {
   analyze: 10, // new project: read the product page, then write 3 concepts
   generate: 6, // "try three new ones"
   regenerate: 2, // one AI edit or regenerated concept
@@ -96,15 +100,24 @@ export const KIND_LABEL: Record<string, string> = {
   analyze: "New project",
   generate: "Three fresh concepts",
   regenerate: "AI edit",
+  analyze_only: "Re-read product page",
   render: "MP4 export",
   refund: "Refund",
   redeem: "Access code",
+  allocation: "Monthly credits",
+  expiry: "Unused credits expired",
+  purchase: "Credit pack",
+  adjustment: "Adjustment",
 };
 
+/** Credits a typical project uses: the project, two AI edits and two exports. */
+export function typicalProjectCredits(costs: CreditCosts = CREDIT_COST): number {
+  return costs.analyze + 2 * costs.regenerate + 2 * costs.render;
+}
+
 /** Roughly how many projects a plan's credits cover with a few edits and exports each. */
-export function projectsPerMonth(credits: number): number {
-  const typical = CREDIT_COST.analyze + 2 * CREDIT_COST.regenerate + 2 * CREDIT_COST.render; // 16
-  return Math.floor(credits / typical);
+export function projectsPerMonth(credits: number, costs: CreditCosts = CREDIT_COST): number {
+  return Math.floor(credits / typicalProjectCredits(costs));
 }
 
 export function creditsEnabled(): boolean {
@@ -160,32 +173,23 @@ function monthsBetween(a: Date, b: Date): number {
 
 export type CreditBalance = {
   plan: PlanId;
+  /** Credits allocated this period (plan allowance, plus any upgrade top-up). */
   allowance: number;
+  /** Credits charged this period, at list price. */
   used: number;
+  /** Credits on hold for operations still running. */
+  held: number;
   left: number;
   unlimited: boolean;
   periodStart: Date;
   resetsAt: Date;
 };
 
-/** Credits used this period (refunds are negative rows, so they give credits back). */
-export async function creditBalance(db: SupabaseClient, userId: string, now = new Date()): Promise<CreditBalance> {
-  const { plan, currentPeriodStart } = await getPlanRow(db, userId);
-  const { start, end } = creditPeriod(now, currentPeriodStart);
-  const { data, error } = await db.from("usage_events").select("credits").eq("user_id", userId).gte("created_at", start.toISOString()).limit(10_000);
-  if (error) throw error;
-  const used = Math.max(0, (data ?? []).reduce((a, r) => a + Number((r as { credits?: number }).credits ?? 0), 0));
-  const allowance = PLANS[plan].credits;
-  const unlimited = !Number.isFinite(allowance);
-  return { plan, allowance, used, left: unlimited ? Infinity : Math.max(0, allowance - used), unlimited, periodStart: start, resetsAt: end };
-}
-
 export function formatResetDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
 }
 
-export function outOfCreditsMessage(kind: ChargeKind, b: CreditBalance): string {
-  const need = CREDIT_COST[kind];
+export function outOfCreditsMessage(kind: ChargeKind, b: Pick<CreditBalance, "left" | "plan" | "resetsAt">, need: number): string {
   const what = KIND_LABEL[kind].toLowerCase();
   return `A ${what} uses ${need} credit${need === 1 ? "" : "s"} and you have ${b.left} left on the ${PLANS[b.plan].label} plan. Credits refill on ${formatResetDate(b.resetsAt)}, or see Pricing for a bigger plan.`;
 }

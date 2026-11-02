@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/landing/site-chrome";
 import { PricingTable } from "@/components/landing/pricing-table";
-import { CREDIT_ACTIONS, CREDIT_COST, PLANS, PUBLIC_PLANS, creditBalance, formatResetDate, type CreditBalance } from "@/lib/plans";
-import { createClient } from "@/lib/supabase/server";
+import { CREDIT_ACTIONS, CREDIT_COST, PLANS, PUBLIC_PLANS, formatResetDate, typicalProjectCredits, type CreditBalance, type CreditCosts } from "@/lib/plans";
+import { getCreditCosts } from "@/lib/billing-config";
+import { getBalance } from "@/lib/credits";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Spark } from "@/components/ui/shapes";
 
 export const dynamic = "force-dynamic";
@@ -13,25 +15,29 @@ export const metadata = {
 
 const ACTION_DOT: Record<string, string> = { analyze: "bg-violet", generate: "bg-cyan", regenerate: "bg-yellow", render: "bg-coral" };
 
-const FAQ: [string, string][] = [
+const faq = (CREDIT_COST: CreditCosts): [string, string][] => [
   ["What is a credit?", `Credits are how Framatic measures AI work. A new ad project (we read your product page and write three complete concepts) uses ${CREDIT_COST.analyze}. An AI edit uses ${CREDIT_COST.regenerate}, and each MP4 export uses ${CREDIT_COST.render}. Editing text, colors, music and timing yourself is always free.`],
   ["Do unused credits roll over?", "No. Your credits refill to your plan's amount at the start of each month."],
-  ["What if a generation fails?", "You get the credits back automatically. If we can't read your page, can't write the concepts or an export fails, the charge is refunded and shows as a refund in Settings."],
+  ["What if a generation fails?", "You aren't charged. Credits are held while the work runs and charged only for what's delivered: if we can't read your page or an export fails, the hold is returned, and if only two of three concepts come out, you pay for two."],
   ["Can I change plans later?", "Yes. Upgrade or downgrade any time. Paid plans are opening soon, and your account and projects stay exactly as they are when you upgrade."],
   ["Do I need a credit card to start?", "No. The Free plan includes 30 credits every month, enough for a project with edits and exports."],
   ["What happens when I run out?", "Your projects and videos stay available. New AI work pauses until your credits refill, or until you move to a bigger plan."],
 ];
 
+const DEFAULT_COSTS = CREDIT_COST;
+
 export default async function PricingPage({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {
   const { reason } = await searchParams;
   let signedIn = false;
   let balance: CreditBalance | null = null;
+  let CREDIT_COST: CreditCosts = DEFAULT_COSTS;
   try {
     const supabase = await createClient();
+    CREDIT_COST = await getCreditCosts(supabase);
     const { data } = await supabase.auth.getUser();
     if (data.user) {
       signedIn = true;
-      balance = await creditBalance(supabase, data.user.id).catch(() => null);
+      balance = await getBalance(createServiceClient(), data.user.id).catch(() => null);
     }
   } catch {
     // Supabase not configured (preview builds): show the public page.
@@ -61,7 +67,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate">Every plan comes with monthly credits for AI work. Start free with no credit card, and pick a bigger plan when you&apos;re running more ads.</p>
           </div>
-          <PricingTable signedIn={signedIn} currentPlan={balance?.plan === "unlimited" ? null : (balance?.plan ?? null)} />
+          <PricingTable costs={CREDIT_COST} signedIn={signedIn} currentPlan={balance?.plan === "unlimited" ? null : (balance?.plan ?? null)} />
         </div>
       </section>
 
@@ -126,7 +132,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
                 </tbody>
               </table>
               <p className="border-t border-line px-5 py-4 text-sm text-slate">
-                A typical project, with a couple of AI edits and two exports, uses about {CREDIT_COST.analyze + 2 * CREDIT_COST.regenerate + 2 * CREDIT_COST.render} credits.
+                A typical project, with a couple of AI edits and two exports, uses about {typicalProjectCredits(CREDIT_COST)} credits.
               </p>
             </div>
           </div>
@@ -140,7 +146,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
             <h2 className="text-display text-[clamp(2.2rem,4.6vw,3.4rem)]">Questions, answered</h2>
           </div>
           <div className="divide-y divide-line border-y border-line">
-            {FAQ.map(([q, a]) => (
+            {faq(CREDIT_COST).map(([q, a]) => (
               <details key={q} className="group py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
                   {q}

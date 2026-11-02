@@ -167,7 +167,7 @@ export function BrandEditor({ projectId, initial, aiReady = false }: { projectId
         setStatus({ tone: "success", text: "Saved." });
       }
       if (thenRefresh) {
-        const res = await fetch(`/api/projects/${projectId}/concepts`, { method: "POST" });
+        const res = await fetch(`/api/projects/${projectId}/concepts`, { method: "POST", headers: { "idempotency-key": crypto.randomUUID() } });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           return setStatus({ tone: "error", text: body.error ?? "Couldn't refresh the concepts." });

@@ -109,3 +109,12 @@ The animated preview uses [Remotion](https://www.remotion.dev). It's free for in
 - Brand profiles reused across projects are shared: editing one updates every project that uses it.
 - Logo uploads go to a public bucket (logos are public anyway). SVG uploads are allowed.
 - Storyboard frames preview fonts only if they're installed on the viewer's device. Phase 2 will load brand webfonts.
+
+
+## Credits, ledger and unit economics
+
+- **Ledger:** `credit_transactions` is append-only (updates and deletes are blocked in the database). Monthly plan credits are allocated on first use each period; unused plan credits expire at rollover.
+- **Reservations:** every paid operation holds its credits first (`credit_reserve`), then settles with what was delivered (`credit_settle`): a new project with 2 of 3 concepts is charged 8 of 10, a failure on our side is charged nothing. All changes run under a per-user advisory lock, so balances can't go negative and concurrent or repeated requests can't double-charge (idempotency keys + one running operation per item). Holds left open by a crashed job settle automatically after 20 minutes.
+- **Metering:** AI calls (`ai_usage`) and compute, render, storage and delivery estimates (`cost_events`) carry the operation id of the hold that paid for them.
+- **Admin:** `/admin/usage` (emails in `FRAMATIC_ADMIN_EMAILS`) shows cost per finished video, cost vs credits per operation and against cost ceilings, plan margins after payment fees against the 70% minimum / 80–90% target, failure rate, utilization and a ledger audit. Credit costs, ceilings and cost assumptions are edited there and stored in `billing_config` (no deploy needed).
+- **Tests:** `npm run test:db` runs the ledger tests, including 8 concurrent requests racing for the same credits.

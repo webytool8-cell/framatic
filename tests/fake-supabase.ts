@@ -36,6 +36,7 @@ class Query implements PromiseLike<{ data: unknown; error: null; count?: number 
   neq(c: string, v: unknown) { this.filters.push((r) => r[c] !== v); return this; }
   in(c: string, vs: unknown[]) { this.filters.push((r) => vs.includes(r[c])); return this; }
   gte(c: string, v: string) { this.filters.push((r) => String(r[c]) >= v); return this; }
+  lt(c: string, v: string) { this.filters.push((r) => String(r[c]) < v); return this; }
   order(col: string, o?: { ascending?: boolean }) { this.orderBy = { col, asc: o?.ascending !== false }; return this; }
   limit(n: number) { this.lim = n; return this; }
   maybeSingle() { this.singleMode = "maybe"; return this; }
@@ -71,10 +72,84 @@ class Query implements PromiseLike<{ data: unknown; error: null; count?: number 
   }
 }
 
+type RpcResult = { data: unknown; error: { code: string; message: string; details?: string } | null };
+
+/**
+ * JS port of the credit ledger functions (supabase/migrations/*credit_ledger.sql)
+ * so app code can be tested without Postgres. The SQL itself is tested in
+ * supabase/tests/ledger_test.sql; keep the two in step.
+ */
 export class FakeDB {
   tables: Record<string, Row[]> = {};
   table(name: string) { return (this.tables[name] ??= []); }
   from(name: string) {
     return new Query(this, name);
+  }
+
+  private tx(row: Row) {
+    const r = { id: randomUUID(), created_at: new Date().toISOString(), bucket: "plan", metadata: {}, ...row };
+    this.table("credit_transactions").push(r);
+    return r;
+  }
+  private ledger(user: unknown) { return this.table("credit_transactions").filter((t) => t.user_id === user); }
+  private sum(rows: Row[]) { return rows.reduce((a, t) => a + Number(t.amount), 0); }
+  private released(id: unknown) { return this.table("credit_transactions").some((t) => t.reservation_id === id && t.type === "release"); }
+
+  private sync(a: Record<string, unknown>) {
+    const rows = this.ledger(a.p_user);
+    const allocs = rows.filter((t) => t.type === "allocation" && t.period_start === a.p_period_start);
+    const allocated = this.sum(allocs);
+    if (!allocs.length) {
+      const left = this.sum(rows.filter((t) => t.bucket === "plan"));
+      if (left > 0) this.tx({ user_id: a.p_user, type: "expiry", amount: -left, period_start: a.p_period_start, plan: a.p_plan });
+      this.tx({ user_id: a.p_user, type: "allocation", amount: Math.max(Number(a.p_allowance), 0), period_start: a.p_period_start, plan: a.p_plan });
+    } else if (Number(a.p_allowance) > allocated) {
+      this.tx({ user_id: a.p_user, type: "allocation", amount: Number(a.p_allowance) - allocated, period_start: a.p_period_start, plan: a.p_plan });
+    }
+  }
+
+  async rpc(name: string, a: Record<string, unknown>): Promise<RpcResult> {
+    if (name === "credit_balance") {
+      this.sync(a);
+      const rows = this.ledger(a.p_user);
+      return {
+        data: [{
+          balance: this.sum(rows),
+          held: rows.filter((t) => t.type === "reservation" && !this.released(t.id)).reduce((x, t) => x - Number(t.amount), 0),
+          allocated: this.sum(rows.filter((t) => t.type === "allocation" && t.period_start === a.p_period_start)),
+          consumed: rows.filter((t) => t.type === "capture" && t.period_start === a.p_period_start).reduce((x, t) => x + Number(t.list_credits), 0),
+        }],
+        error: null,
+      };
+    }
+    if (name === "credit_reserve") {
+      this.sync(a);
+      const rows = this.ledger(a.p_user);
+      if (a.p_idempotency_key) {
+        const ex = rows.find((t) => t.idempotency_key === a.p_idempotency_key);
+        if (ex) return { data: [{ reservation_id: ex.id, created: false, balance: this.sum(rows) }], error: null };
+      }
+      if (a.p_ref && rows.some((t) => t.type === "reservation" && t.operation === a.p_operation && t.ref === a.p_ref && !this.released(t.id))) {
+        return { data: null, error: { code: "FR002", message: "operation already in progress" } };
+      }
+      const balance = this.sum(rows);
+      const amount = Number(a.p_amount);
+      if (!a.p_unlimited && balance < amount) return { data: null, error: { code: "FR001", message: "insufficient credits", details: String(balance) } };
+      const r = this.tx({ user_id: a.p_user, type: "reservation", amount: a.p_unlimited ? 0 : -amount, operation: a.p_operation, ref: a.p_ref, idempotency_key: a.p_idempotency_key ?? null, period_start: a.p_period_start, plan: a.p_plan, list_credits: amount });
+      return { data: [{ reservation_id: r.id, created: true, balance: balance - (a.p_unlimited ? 0 : amount) }], error: null };
+    }
+    if (name === "credit_settle") {
+      const res = this.table("credit_transactions").find((t) => t.id === a.p_reservation && t.type === "reservation");
+      if (!res) return { data: null, error: { code: "FR404", message: "reservation not found" } };
+      if (this.released(res.id)) return { data: [{ captured: 0, released: 0, already_settled: true }], error: null };
+      const list = Number(res.list_credits ?? 0);
+      const capture = Math.min(Math.max(Number(a.p_capture ?? 0), 0), list);
+      const unlimited = Number(res.amount) === 0 && list > 0;
+      const common = { user_id: res.user_id, operation: res.operation, ref: res.ref, reservation_id: res.id, period_start: res.period_start, plan: res.plan, reason: a.p_reason, metadata: a.p_metadata ?? {} };
+      this.tx({ ...common, type: "release", amount: -Number(res.amount), list_credits: list });
+      if (capture > 0) this.tx({ ...common, type: "capture", amount: unlimited ? 0 : -capture, list_credits: capture });
+      return { data: [{ captured: capture, released: -Number(res.amount), already_settled: false }], error: null };
+    }
+    return { data: null, error: { code: "42883", message: `unknown rpc ${name}` } };
   }
 }

@@ -1,14 +1,14 @@
 import { after, NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { getProject, setProjectStatus } from "@/lib/db/repo";
-import { analyzeProject } from "@/lib/jobs/analyze-project";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { runAnalyzeOnly } from "@/lib/jobs/autopilot";
+import { reserveCredits } from "@/lib/credits";
 import { createServiceClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/types";
 
 export const maxDuration = 300;
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { supabase, user } = await routeUser();
@@ -19,9 +19,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (effectiveStatus(project).status === "analyzing") return jsonError("Analysis is already running.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "analyze", id);
+    const hold = await reserveCredits(admin, user.id, "analyze_only", { ref: id, idempotencyKey: req.headers.get("idempotency-key") });
+    if (!hold.created) return NextResponse.json({ status: "analyzing" }, { status: 202 });
     await setProjectStatus(admin, user.id, id, "analyzing", "Queued…");
-    after(() => analyzeProject(admin, user.id, id));
+    after(() => runAnalyzeOnly(admin, user.id, id, hold.reservationId));
     return NextResponse.json({ status: "analyzing" }, { status: 202 });
   } catch (e) {
     return handleRouteError(e, "analyze");

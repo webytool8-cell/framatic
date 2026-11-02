@@ -2,14 +2,14 @@ import { after, NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { isLLMConfigured } from "@/lib/ai/llm";
 import { getProject, setProjectStatus } from "@/lib/db/repo";
-import { generateAllConcepts } from "@/lib/jobs/concepts";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { runGenerate } from "@/lib/jobs/autopilot";
+import { reserveCredits } from "@/lib/credits";
 import { createServiceClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/types";
 
 export const maxDuration = 300;
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { supabase, user } = await routeUser();
@@ -22,9 +22,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (s === "generating" || s === "analyzing") return jsonError("Another job is already running for this project.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "generate", id);
+    const hold = await reserveCredits(admin, user.id, "generate", { ref: id, idempotencyKey: req.headers.get("idempotency-key") });
+    if (!hold.created) return NextResponse.json({ status: "generating" }, { status: 202 });
     await setProjectStatus(admin, user.id, id, "generating", "Developing three creative directions…");
-    after(() => generateAllConcepts(admin, user.id, id));
+    after(() => runGenerate(admin, user.id, id, hold.reservationId));
     return NextResponse.json({ status: "generating" }, { status: 202 });
   } catch (e) {
     return handleRouteError(e, "generate");

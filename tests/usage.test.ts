@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FallbackLLM, LLMOutputError, shouldFallBack, type StructuredLLM } from "@/lib/ai/llm";
 import { costForUsage, dbMeter, priceFor, renderCostUsd } from "@/lib/ai/usage";
-import { CREDIT_COST, PLANS, creditBalance, creditPeriod, projectsPerMonth } from "@/lib/plans";
-import { OutOfCreditsError, RateLimitError, chargeCredits, refundLatestCharge, setChargeRef } from "@/lib/rate-limit";
+import { CREDIT_COST, PLANS, creditPeriod, projectsPerMonth } from "@/lib/plans";
+import { OperationInProgressError, OutOfCreditsError, RateLimitError } from "@/lib/rate-limit";
+import { captureFor, getBalance, reserveCredits, settleCredits, settleOperation, sweepStaleReservations } from "@/lib/credits";
+import { DEFAULT_BILLING, mergeBillingConfig } from "@/lib/billing-config";
+import { buildEconomics, netOfFees, tierMargins } from "@/lib/unit-economics";
 import { buildUsageReport } from "@/lib/usage-report";
 import { FakeDB } from "./fake-supabase";
 
@@ -62,82 +65,149 @@ describe("fast model with fallback", () => {
 });
 
 describe("credits", () => {
-  const spend = (db: FakeDB, kind: string, credits: number, at = "2026-11-03T00:00:00.000Z", ref: string | null = null) =>
-    db.table("usage_events").push({ id: db.table("usage_events").length + 1, user_id: "u1", kind, credits, ref, created_at: at });
-
   it("refills on the 1st (UTC), or on the billing date once Stripe sets one", () => {
     expect(creditPeriod(NOW)).toEqual({ start: new Date("2026-11-01T00:00:00Z"), end: new Date("2026-12-01T00:00:00Z") });
     const anchor = new Date("2026-08-20T00:00:00Z");
     expect(creditPeriod(NOW, anchor)).toEqual({ start: new Date("2026-10-20T00:00:00Z"), end: new Date("2026-11-20T00:00:00Z") });
     expect(creditPeriod(new Date("2026-11-25T00:00:00Z"), anchor).start).toEqual(new Date("2026-11-20T00:00:00Z"));
-    // Billing on the 31st lands on the last day of shorter months.
     expect(creditPeriod(new Date("2026-03-01T00:00:00Z"), new Date("2026-01-31T00:00:00Z")).start).toEqual(new Date("2026-02-28T00:00:00Z"));
-  });
-
-  it("every paid plan keeps a healthy margin at ~3¢ of AI per credit", () => {
-    for (const id of ["starter", "pro", "studio"] as const) {
-      const p = PLANS[id];
-      expect(p.credits * 0.03).toBeLessThan((p.priceYearlyPerMonth ?? 0) * 0.8);
-    }
     expect(projectsPerMonth(PLANS.free.credits)).toBeGreaterThanOrEqual(1);
   });
 
-  it("charges credits, counts only this period and blocks when they run out", async () => {
+  it("charges for what was delivered", () => {
+    const c = CREDIT_COST; // analyze 10, generate 6, regenerate 2, render 1
+    expect(captureFor(c, "analyze", { kind: "concepts", delivered: 3 })).toBe(10);
+    expect(captureFor(c, "analyze", { kind: "concepts", delivered: 2 })).toBe(8);
+    expect(captureFor(c, "analyze", { kind: "concepts", delivered: 0 })).toBe(0); // nothing usable: no charge
+    expect(captureFor(c, "generate", { kind: "concepts", delivered: 1 })).toBe(2);
+    expect(captureFor(c, "analyze_only", { kind: "done" })).toBe(4);
+    expect(captureFor(c, "render", { kind: "failed" })).toBe(0);
+    expect(captureFor(c, "regenerate", { kind: "done" })).toBe(2);
+  });
+
+  it("holds before work, settles after, and never overspends", async () => {
     const db = new FakeDB();
-    spend(db, "analyze", 10, "2026-10-20T00:00:00.000Z"); // last month: ignored
-    spend(db, "analyze", 10);
-    spend(db, "regenerate", 2);
-    let b = await creditBalance(asDb(db), "u1", NOW);
-    expect(b).toMatchObject({ plan: "free", allowance: 30, used: 12, left: 18, unlimited: false });
+    let b = await getBalance(asDb(db), "u1", NOW);
+    expect(b).toMatchObject({ plan: "free", allowance: 30, left: 30, used: 0, held: 0 });
 
-    await chargeCredits(asDb(db), "u1", "analyze", "p2", NOW);
-    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "analyze", credits: CREDIT_COST.analyze, ref: "p2" });
-    b = await creditBalance(asDb(db), "u1", NOW);
-    expect(b.left).toBe(8);
+    const h1 = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p1", now: NOW });
+    const h2 = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p2", now: NOW });
+    b = await getBalance(asDb(db), "u1", NOW);
+    expect(b).toMatchObject({ left: 10, held: 20 });
 
-    const err = await chargeCredits(asDb(db), "u1", "analyze", "p3", NOW).catch((e: Error) => e);
+    // A third fits exactly; a fourth doesn't while three are running.
+    const h3 = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p3", now: NOW });
+    const err = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p4", now: NOW }).catch((e: Error) => e);
     expect(err).toBeInstanceOf(OutOfCreditsError);
-    expect(err).toBeInstanceOf(RateLimitError); // routes answer with 429
-    expect((err as Error).message).toMatch(/uses 10 credits and you have 8 left on the Free plan.*December 1/);
-    await expect(chargeCredits(asDb(db), "u1", "render", "c1", NOW)).resolves.toBeTypeOf("string");
+    expect(err).toBeInstanceOf(RateLimitError); // answered with 429
+    expect((err as Error).message).toMatch(/uses 10 credits and you have 0 left on the Free plan.*December 1/);
+    await settleOperation(asDb(db), h3.reservationId, "analyze", { kind: "failed" });
+
+    // p1 delivered 2 of 3 concepts; p2 failed on our side.
+    await settleOperation(asDb(db), h1.reservationId, "analyze", { kind: "concepts", delivered: 2 });
+    await settleOperation(asDb(db), h2.reservationId, "analyze", { kind: "failed" });
+    b = await getBalance(asDb(db), "u1", NOW);
+    expect(b).toMatchObject({ left: 22, held: 0, used: 8 });
+
+    // Settling twice is harmless.
+    expect(await settleCredits(asDb(db), h1.reservationId, 10, "again")).toEqual({ captured: 0, alreadySettled: true });
+    expect((await getBalance(asDb(db), "u1", NOW)).left).toBe(22);
   });
 
-  it("refunds a failed job once, and the credits come back", async () => {
+  it("dedupes repeated requests and refuses a second run of the same thing", async () => {
     const db = new FakeDB();
-    spend(db, "analyze", 10, "2026-11-03T00:00:00.000Z", "p1");
-    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(20);
-    expect(await refundLatestCharge(asDb(db), "u1", "p1", "test")).toBe(10);
-    expect(await refundLatestCharge(asDb(db), "u1", "p1", "again")).toBe(0);
-    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(30);
-    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "refund", credits: -10 });
-    // A retry is a new charge and can be refunded on its own.
-    spend(db, "analyze", 10, "2026-11-04T00:00:00.000Z", "p1");
-    expect(await refundLatestCharge(asDb(db), "u1", "p1", "retry failed")).toBe(10);
+    const a = await reserveCredits(asDb(db), "u1", "render", { ref: "c1:v3", idempotencyKey: "click-1", now: NOW });
+    const again = await reserveCredits(asDb(db), "u1", "render", { ref: "c1:v3", idempotencyKey: "click-1", now: NOW });
+    expect(again).toMatchObject({ reservationId: a.reservationId, created: false });
+    await expect(reserveCredits(asDb(db), "u1", "render", { ref: "c1:v3", idempotencyKey: "click-2", now: NOW })).rejects.toBeInstanceOf(OperationInProgressError);
+    // Only one hold, one attempt counted towards the hourly limit.
+    expect(db.table("credit_transactions").filter((t) => t.type === "reservation")).toHaveLength(1);
+    expect(db.table("usage_events")).toHaveLength(1);
+    // Once settled, the same version can be exported again.
+    await settleOperation(asDb(db), a.reservationId, "render", { kind: "done" });
+    await expect(reserveCredits(asDb(db), "u1", "render", { ref: "c1:v3", idempotencyKey: "click-3", now: NOW })).resolves.toMatchObject({ created: true });
   });
 
-  it("tags a charge after the fact so exports can refund themselves", async () => {
+  it("settles holds whose job died, from what the database shows", async () => {
     const db = new FakeDB();
-    const id = await chargeCredits(asDb(db), "u1", "render", "c1", NOW);
-    await setChargeRef(asDb(db), id as unknown as number, "render:r1");
-    expect(await refundLatestCharge(asDb(db), "u1", "render:r1", "render failed")).toBe(1);
+    const hold = await reserveCredits(asDb(db), "u1", "render", { ref: "c1:v1", now: NOW });
+    db.table("renders").push({ id: "r1", user_id: "u1", operation_id: hold.reservationId, status: "done" });
+    const t = db.table("credit_transactions").find((x) => x.id === hold.reservationId)!;
+    t.created_at = new Date(Date.now() - 30 * 60_000).toISOString();
+    expect(await sweepStaleReservations(asDb(db), "u1")).toBe(1);
+    expect(db.table("credit_transactions").filter((x) => x.type === "capture")).toHaveLength(1);
+    expect(await sweepStaleReservations(asDb(db), "u1")).toBe(0);
   });
 
-  it("paid plans get their allowance; unlimited and the off switch charge nothing", async () => {
+  it("paid plans get their allowance; unlimited and the off switch deduct nothing", async () => {
     const db = new FakeDB();
-    spend(db, "analyze", 30);
-    await expect(chargeCredits(asDb(db), "u1", "render", null, NOW)).rejects.toBeInstanceOf(OutOfCreditsError);
     db.table("user_plans").push({ user_id: "u1", plan: "pro" });
-    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(970);
+    expect((await getBalance(asDb(db), "u1", NOW)).left).toBe(1000);
     db.table("user_plans")[0].plan = "unlimited";
-    await chargeCredits(asDb(db), "u1", "analyze", null, NOW);
-    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "analyze", credits: 0 });
-    const b = await creditBalance(asDb(db), "u1", NOW);
-    expect(b.unlimited).toBe(true);
+    const h = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p1", now: NOW });
+    await settleOperation(asDb(db), h.reservationId, "analyze", { kind: "concepts", delivered: 3 });
+    const b = await getBalance(asDb(db), "u1", NOW);
+    expect(b).toMatchObject({ unlimited: true, used: 10 });
     expect(b.left).toBe(Infinity);
+    expect(db.table("credit_transactions").filter((x) => x.type === "capture")[0]).toMatchObject({ amount: 0, list_credits: 10 });
     db.table("user_plans")[0].plan = "free";
     process.env.FRAMATIC_QUOTAS = "off";
-    await chargeCredits(asDb(db), "u1", "analyze", null, NOW);
-    expect(db.table("usage_events").at(-1)).toMatchObject({ credits: 0 });
+    const h2 = await reserveCredits(asDb(db), "u1", "analyze", { ref: "p2", now: NOW });
+    expect(db.table("credit_transactions").find((x) => x.id === h2.reservationId)).toMatchObject({ amount: 0 });
+  });
+
+  it("reads credit costs from billing config, falling back to defaults", () => {
+    expect(mergeBillingConfig(null)).toEqual(DEFAULT_BILLING);
+    expect(mergeBillingConfig({ creditCosts: { regenerate: 3 } }).creditCosts).toEqual({ ...CREDIT_COST, regenerate: 3 });
+    expect(mergeBillingConfig({ creditCosts: { regenerate: -5 } })).toEqual(DEFAULT_BILLING); // invalid → defaults
+  });
+});
+
+describe("unit economics", () => {
+  it("nets out payment fees and works out margin per plan", () => {
+    expect(netOfFees(19, DEFAULT_BILLING)).toBeCloseTo(19 - 0.551 - 0.3, 6);
+    const [starter] = tierMargins(0.016, DEFAULT_BILLING);
+    expect(starter.plan).toBe("starter");
+    expect(starter.monthly.revenuePerCredit).toBeCloseTo((19 - 0.551 - 0.3) / 300, 6);
+    expect(starter.monthly.margin).toBeCloseTo(1 - 0.016 / starter.monthly.revenuePerCredit, 6);
+    expect(starter.yearly.revenuePerCredit).toBeLessThan(starter.monthly.revenuePerCredit);
+  });
+
+  it("attributes costs to operations and finds failures, cost per video and utilization", () => {
+    const tx = (id: string, type: string, extra: Record<string, unknown> = {}) => ({ id, user_id: "u1", type, operation: null, amount: 0, list_credits: null, reservation_id: null, reason: null, plan: "free", created_at: "2026-11-03T00:00:00Z", ...extra });
+    const ledger = [
+      tx("a", "allocation", { amount: 30 }),
+      tx("r1", "reservation", { operation: "analyze", amount: -10, list_credits: 10 }),
+      tx("x1", "release", { operation: "analyze", reservation_id: "r1", amount: 10, reason: "completed" }),
+      tx("c1", "capture", { operation: "analyze", reservation_id: "r1", amount: -10, list_credits: 10 }),
+      tx("r2", "reservation", { operation: "analyze", amount: -10, list_credits: 10 }),
+      tx("x2", "release", { operation: "analyze", reservation_id: "r2", amount: 10, reason: "system_failure" }),
+      tx("r3", "reservation", { operation: "render", amount: -1, list_credits: 1 }),
+      tx("x3", "release", { operation: "render", reservation_id: "r3", amount: 1, reason: "completed" }),
+      tx("c3", "capture", { operation: "render", reservation_id: "r3", amount: -1, list_credits: 1 }),
+      tx("r4", "reservation", { operation: "regenerate", amount: -2, list_credits: 2 }),
+    ];
+    const ai = [
+      { operation_id: "r1", cost_usd: "0.14", ok: true },
+      { operation_id: "r2", cost_usd: "0.05", ok: false },
+      { operation_id: null, cost_usd: "0.01", ok: true },
+    ];
+    const other = [
+      { operation_id: "r1", operation: "analyze", category: "compute", cost_usd: "0.01" },
+      { operation_id: "r3", operation: "render", category: "render", cost_usd: "0.00528" },
+      { operation_id: "r3", operation: "render", category: "delivery", cost_usd: "0.0002" },
+    ];
+    const e = buildEconomics({ ledger, ai, other, doneRenders: 1, cfg: DEFAULT_BILLING });
+    const project = e.byOperation.find((o) => o.operation === "analyze")!;
+    expect(project).toMatchObject({ count: 2, completed: 1, failed: 1, failureRate: 0.5 });
+    expect(project.avgCost).toBeCloseTo(0.15, 6);
+    expect(project.wasted).toBeCloseTo(0.05, 6);
+    expect(e.firstVideoCost).toBeCloseTo(0.15 + 0.00548, 6);
+    expect(e.totals.all).toBeCloseTo(0.14 + 0.05 + 0.01 + 0.01 + 0.00528 + 0.0002, 6);
+    expect(e.totals.unattributed).toBeCloseTo(0.01, 6);
+    expect(e.costPerFinishedVideo).toBeCloseTo(e.totals.all, 6);
+    expect(e.credits).toEqual({ allocated: 30, consumed: 11, held: 2, utilization: 11 / 30 });
+    expect(e.costPerCredit).toBeCloseTo(e.totals.all / 11, 6);
   });
 });
 

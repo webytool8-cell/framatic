@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { Sidebar, type SidebarProject } from "@/components/app/sidebar";
-import { requireUser } from "@/lib/supabase/server";
-import { creditBalance } from "@/lib/plans";
+import { createServiceClient, requireUser } from "@/lib/supabase/server";
+import { getBalance } from "@/lib/credits";
 import { effectiveStatus, type ProjectRow } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +21,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     color: p.brand_profiles?.profile?.identity?.primaryColor ?? null,
   }));
 
-  const balance = await creditBalance(supabase, user.id).catch(() => null);
+  // Ledger functions are server-only, so balances are read with the service client.
+  const balance = await getBalance(createServiceClient(), user.id).catch(() => null);
   const credits = balance ? { left: balance.unlimited ? 0 : balance.left, allowance: balance.unlimited ? 0 : balance.allowance, unlimited: balance.unlimited } : null;
 
   return (

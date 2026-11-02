@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { RENDER_BUCKET } from "@/lib/render/cloudrun";
-import { refundLatestCharge } from "@/lib/rate-limit";
+import { settleOperation } from "@/lib/credits";
+import { recordRenderCosts } from "@/lib/metering";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +28,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       if (data) row = data;
     }
 
-    // A failed export gives its credit back (once: refunds are idempotent per charge).
-    if (row.status === "failed") await refundLatestCharge(createServiceClient(), user.id, `render:${id}`, "render failed");
+    // Settle the export's credit hold once it's finished: charged if done, returned if it failed.
+    // Settling is idempotent, so costs are recorded only the first time.
+    if ((row.status === "done" || row.status === "failed") && row.operation_id) {
+      const admin = createServiceClient();
+      const done = row.status === "done";
+      const settled = await settleOperation(admin, row.operation_id, "render", done ? { kind: "done" } : { kind: "failed" }, { renderId: id });
+      if (!settled.alreadySettled) {
+        const seconds = (new Date(row.updated_at).getTime() - new Date(row.created_at).getTime()) / 1000;
+        await recordRenderCosts(admin, { userId: user.id, operationId: row.operation_id, renderId: id, seconds, sizeBytes: row.out_size_bytes ?? null, done });
+      }
+    }
 
     let downloadUrl: string | null = null;
     if (row.status === "done" && row.out_key) {

@@ -50,7 +50,7 @@ export function JobRunner({
   const start = useCallback(async () => {
     setError(null);
     setRunning(true);
-    const res = await fetch(`/api/projects/${projectId}/${ENDPOINT[kind]}`, { method: "POST" });
+    const res = await fetch(`/api/projects/${projectId}/${ENDPOINT[kind]}`, { method: "POST", headers: { "idempotency-key": crypto.randomUUID() } });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setRunning(false);
