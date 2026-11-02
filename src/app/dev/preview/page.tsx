@@ -18,6 +18,7 @@ import { finalizeConcept } from "@/lib/creative/director";
 import type { SiteAnalysis } from "@/lib/analyzer/crawl";
 import { aiBrandFixture, aiConceptFixture, HOME } from "@/lib/dev/sample-data";
 import { samplePlan } from "@/lib/samples";
+import { SAMPLE_CONCEPTS } from "@/lib/sample-project";
 import { CreditsCard } from "@/components/app/credits-card";
 import { SectionCard } from "@/components/ui/card";
 
@@ -75,6 +76,10 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
             <JobRunner projectId="demo" kind="autopilot" status="generating" message="Writing three ad concepts…" label="" compact />
           </div>
         )}
+        {view === "sample" && (() => {
+          const c = SAMPLE_CONCEPTS[1];
+          return <ConceptWorkspace sample concept={{ id: c.id, kind: c.kind, content: c.content, preferences: c.preferences, editedFields: [], isPreferred: false, version: 1, plan: c.plan }} versions={[{ version: 1, source: "ai", created_at: "2026-11-01T12:00:00Z" }]} logoUrl={null} productName="Lumen" aiReady={false} />;
+        })()}
         {view === "music" && <div className="max-w-5xl space-y-5"><h1 className="text-heading text-2xl">Music library</h1><MusicLibrary /></div>}
         {view === "running" && <div className="mx-auto max-w-2xl"><JobRunner projectId="demo" kind="autopilot" status="analyzing" message="Reading your website…" label="" /></div>}
         {view === "dashboard" && (

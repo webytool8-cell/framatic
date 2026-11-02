@@ -47,6 +47,8 @@ type Props = {
   aiReady: boolean;
   renderReady?: boolean;
   renders?: RenderItem[];
+  /** Read-only sample: edits stay in the browser, nothing saves, no exports, no AI. */
+  sample?: boolean;
 };
 
 const QUICK_ASKS = ["Make it punchier", "Shorter: 15 seconds", "Vertical 9:16 for Reels", "More playful", "Focus on one feature", "Stronger call to action"];
@@ -54,7 +56,7 @@ const LONG: EditableField[] = ["description", "rationale", "supportingCopy", "vi
 const ADVANCED_FIELDS: EditableField[] = ["title", "campaignObjective", "description", "targetAudience", "rationale", "visualDirection", "typographyDirection", "musicMood", "pacing"];
 const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [], creditCosts = CREDIT_COST }: Props) {
+export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [], creditCosts = CREDIT_COST, sample = false }: Props) {
   const router = useRouter();
   const meta = CONCEPT_META[concept.kind];
   const [content, setContent] = useState(concept.content);
@@ -204,9 +206,13 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
           <SceneStrip plan={planPreview} className="mt-3 h-2 max-w-md" />
           <p className="mt-2 text-sm text-slate">{planPreview.aspectRatio} · {planPreview.durationSec.toFixed(0)}s · {planPreview.scenes.length} scenes · {content.pacing} · {content.musicMood}</p>
         </div>
-        <Button variant={concept.isPreferred ? "ink" : "secondary"} disabled={!!busy} onClick={() => run("pref", () => setPreferredConcept(concept.id, !concept.isPreferred))}>
-          {concept.isPreferred ? "★ This is my pick" : "☆ Choose this one"}
-        </Button>
+        {sample ? (
+          <span className="rounded-full bg-butter px-3 py-1 text-sm font-semibold text-yellow-deep">Sample project · view only</span>
+        ) : (
+          <Button variant={concept.isPreferred ? "ink" : "secondary"} disabled={!!busy} onClick={() => run("pref", () => setPreferredConcept(concept.id, !concept.isPreferred))}>
+            {concept.isPreferred ? "★ This is my pick" : "☆ Choose this one"}
+          </Button>
+        )}
       </div>
 
       {notice && <Alert tone={notice.tone} className="mb-6">{notice.text}</Alert>}
@@ -242,7 +248,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
           <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="edit-title">
             <div className="flex items-center justify-between gap-2 border-b border-line px-4 pt-4">
               <h3 id="edit-title" className="text-heading pb-3 text-lg">Edit</h3>
-              <span className="mb-3 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-lime-deep">Free · no credits</span>
+              <span className="mb-3 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-lime-deep">{sample ? "Try it · nothing is saved" : "Free · no credits"}</span>
             </div>
             <div role="tablist" aria-label="Edit" className="flex gap-1 border-b border-line px-3">
               {([["scene", `Scene ${selectedScene + 1}`], ["style", "Look & format"], ["copy", "Copy"]] as const).map(([k, label]) => (
@@ -262,11 +268,11 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                       track={concept.plan.music.track}
                       volume={concept.plan.music.volume ?? 0.7}
                       soundSet={concept.plan.music.soundSet}
-                      disabled={!!busy || anyDirty}
+                      disabled={sample || !!busy || anyDirty}
                       stacked
                       onChange={(t, v, set) => run("music", () => updateMusic(concept.id, t, v, set))}
                     />
-                    {anyDirty && <p className="mt-1 text-xs text-slate">Save your other changes before switching music.</p>}
+                    {sample ? <p className="mt-1 text-xs text-slate">Music can be changed in your own projects.</p> : anyDirty && <p className="mt-1 text-xs text-slate">Save your other changes before switching music.</p>}
                   </div>
                 </div>
               )}
@@ -281,9 +287,17 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
             </div>
           </section>
 
+          {sample ? (
+            <section className="rounded-[var(--radius-card)] border-[1.5px] border-dashed border-line-strong bg-white p-4">
+              <h3 className="text-heading text-lg">Export</h3>
+              <p className="mt-1 text-sm text-slate">Exports are turned off for the sample project. Make your own project to export MP4s of your ads.</p>
+              <a href="/projects/new" className="mt-3 inline-flex rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</a>
+            </section>
+          ) : (
           <ExportPanel renderCost={creditCosts.render} conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
+          )}
 
-          {aiReady && (
+          {aiReady && !sample && (
             <details className="group rounded-[var(--radius-card)] border-[1.5px] border-line bg-white" aria-labelledby="ask-title">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-4">
                 <span>
@@ -326,12 +340,20 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
       {anyDirty && (
         <div role="region" aria-label="Unsaved changes" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:left-60">
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-8 lg:px-12">
-            <p className="text-sm"><span className="font-semibold">Unsaved changes.</span> <span className="text-slate">Saving is free{concept.plan.music.track && concept.plan.music.track !== "none" ? "; scene lengths snap to the beat" : ""}.</span></p>
+            {sample ? (
+              <p className="text-sm"><span className="font-semibold">This is a sample project.</span> <span className="text-slate">Your changes show in the preview but aren&apos;t saved.</span></p>
+            ) : (
+              <p className="text-sm"><span className="font-semibold">Unsaved changes.</span> <span className="text-slate">Saving is free{concept.plan.music.track && concept.plan.music.track !== "none" ? "; scene lengths snap to the beat" : ""}.</span></p>
+            )}
             <div className="flex gap-2">
-              <Button variant="ghost" disabled={!!busy} onClick={undoAll}>Undo all</Button>
-              <Button disabled={!!busy} onClick={() => run("save", saveAll, () => { setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); })}>
-                {busy === "save" ? "Saving…" : "Save changes"}
-              </Button>
+              <Button variant="ghost" disabled={!!busy} onClick={undoAll}>{sample ? "Reset" : "Undo all"}</Button>
+              {sample ? (
+                <a href="/projects/new" className="inline-flex items-center rounded-lg bg-violet px-4 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</a>
+              ) : (
+                <Button disabled={!!busy} onClick={() => run("save", saveAll, () => { setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); })}>
+                  {busy === "save" ? "Saving…" : "Save changes"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -407,7 +429,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                       <Tag tone={v.source === "user" ? "user" : "neutral"}>{v.source === "user" ? "your edit" : v.source === "ai_partial" ? "AI change" : "AI"}</Tag>
                       <span className="text-slate">{fmt.format(new Date(v.created_at))}</span>
                     </span>
-                    {v.version === concept.version ? <span className="text-xs font-semibold text-lime-deep">Current</span> : (
+                    {v.version === concept.version || sample ? <span className="text-xs font-semibold text-lime-deep">Current</span> : (
                       <button className="text-xs font-semibold text-violet-deep hover:underline disabled:opacity-40" disabled={!!busy || anyDirty} onClick={() => run(`restore:${v.version}`, () => restoreSceneVersion(concept.id, v.version))}>Restore</button>
                     )}
                   </li>

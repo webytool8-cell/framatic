@@ -56,6 +56,10 @@ function SidebarBody({ projects, email, credits }: { projects: SidebarProject[];
           <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".9" /><rect x="9" y="1.5" width="5.5" height="5.5" rx="2.75" fill="currentColor" opacity=".5" /><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".5" /><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".9" /></svg>
           All projects
         </NavLink>
+        <NavLink href="/sample" active={path.startsWith("/sample")}>
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><path d="M8 1.5c.5 0 .4 3 2 4.4 1.5 1.3 4.5 1.4 4.5 1.9s-3 .6-4.5 1.9C8.4 11.1 8.5 14.5 8 14.5s-.4-3.4-2-4.8C4.5 8.4 1.5 8.3 1.5 7.8s3-.6 4.5-1.9C7.6 4.5 7.5 1.5 8 1.5Z" fill="currentColor" /></svg>
+          Sample project
+        </NavLink>
         <NavLink href="/music" active={path === "/music"}>
           <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><path d="M6 12.5V3.5l7-1.5v9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="4.5" cy="12.5" r="1.8" fill="currentColor" /><circle cx="11.5" cy="11" r="1.8" fill="currentColor" /></svg>
           Music library

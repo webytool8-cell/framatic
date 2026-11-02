@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCreditCosts } from "@/lib/billing-config";
 import { Composer } from "@/components/app/composer";
 import { ProjectTable, type ProjectListItem } from "@/components/app/project-table";
@@ -64,6 +65,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <h2 className="text-heading mb-1 text-xl">Make a new ad</h2>
         <p className="mb-5 text-sm text-slate">Paste a store, product or app link. Concepts are ready in 1–2 minutes and use {costs.analyze} credits.</p>
         <Composer size="md" />
+        <p className="mt-4 text-sm text-slate">
+          Want to see what you&apos;ll get first? <Link href="/sample" className="font-semibold text-violet-deep hover:underline">Look around a sample project →</Link>
+        </p>
       </section>
       {password === "updated" && <p className="rounded-lg border-l-4 border-lime bg-mint px-4 py-2 text-sm">Your password was updated.</p>}
       {startError === "start" && <p className="text-sm text-coral-deep">We couldn&apos;t start that project. Please try again.</p>}
