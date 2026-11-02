@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { ConceptContent, CreativePreferences, EDITABLE_FIELDS } from "@/lib/creative/concept";
-import { Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
+import { ASPECT_RATIOS, Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
 import { SOUND_SETS, trackById } from "@/video/music";
 import { getConcept, saveConceptVersion } from "@/lib/db/repo";
 import type { FormState } from "./auth";
@@ -127,4 +127,61 @@ export async function updateMusic(conceptId: string, trackId: string, volume: nu
   });
   revalidatePath(`/projects/${concept.project_id}`, "layout");
   return { message: track ? `Music: ${track.title}` : "Music off" };
+}
+
+const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colors must be hex, like #7957FF");
+const ManualEdits = z.object({
+  content: ContentPatch.optional(),
+  plan: z
+    .object({
+      scenes: z.array(Scene).min(3, "An ad needs at least 3 scenes.").max(14, "An ad can have at most 14 scenes."),
+      aspectRatio: z.enum(ASPECT_RATIOS),
+      palette: z.object({ primary: Hex, secondary: Hex, accent: Hex, ink: Hex, paper: Hex }),
+      fonts: z.object({ heading: z.string().regex(/^[A-Za-z0-9 ]{2,40}$/), body: z.string().regex(/^[A-Za-z0-9 ]{2,40}$/) }),
+    })
+    .optional(),
+});
+
+/**
+ * Save everything the person changed by hand (copy, scenes, format, colors,
+ * fonts) as one new version. Manual edits never use credits. With music on,
+ * scene lengths snap to the beat so cuts stay in time.
+ */
+export async function saveManualEdits(conceptId: string, edits: unknown): Promise<FormState> {
+  const { supabase, user } = await requireUser();
+  const concept = await getConcept(supabase, user.id, conceptId);
+  if (!concept?.scenePlan) return { error: "Concept not found." };
+  const parsed = ManualEdits.safeParse(edits);
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    const where = i.path[0] === "plan" && i.path[1] === "scenes" && typeof i.path[2] === "number" ? `Scene ${Number(i.path[2]) + 1}: ` : "";
+    return { error: `${where}${i.message}` };
+  }
+  const { content: patch, plan: planEdits } = parsed.data;
+
+  const changedFields = patch
+    ? Object.entries(patch).filter(([k, v]) => JSON.stringify(concept.content[k as keyof typeof concept.content]) !== JSON.stringify(v)).map(([k]) => k)
+    : [];
+  let content = ConceptContent.parse({ ...concept.content, ...(patch ?? {}) });
+
+  let scenePlan: ScenePlan | undefined;
+  if (planEdits) {
+    const candidate = { ...concept.scenePlan, ...planEdits };
+    if (JSON.stringify(candidate) !== JSON.stringify(concept.scenePlan)) {
+      const track = trackById(concept.scenePlan.music.track);
+      const snapped = track ? snapToBeats(candidate, track.bpm) : candidate;
+      const result = ScenePlan.safeParse(normalizeScenePlan(snapped, content.cta));
+      if (!result.success) return { error: `The ad isn't valid yet: ${result.error.issues[0].path.join(" › ")} ${result.error.issues[0].message}` };
+      scenePlan = result.data;
+      content = { ...content, estimatedDurationSec: scenePlan.durationSec };
+    }
+  }
+  if (!changedFields.length && !scenePlan) return { message: "No changes to save." };
+
+  const edited = [...new Set([...concept.edited_fields, ...changedFields, ...(scenePlan ? ["scenes"] : [])])];
+  // Keep the chosen format for future AI rewrites too.
+  const preferences = scenePlan && scenePlan.aspectRatio !== concept.preferences.aspectRatio ? { ...concept.preferences, aspectRatio: scenePlan.aspectRatio } : undefined;
+  await saveConceptVersion(supabase, user.id, concept, { content, editedFields: edited, scenePlan, source: "user", preferences });
+  revalidatePath(`/projects/${concept.project_id}`, "layout");
+  return { message: "Saved. Editing is always free." };
 }

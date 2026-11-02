@@ -13,13 +13,17 @@ export function MusicPicker({
   soundSet,
   disabled,
   onChange,
+  stacked = false,
 }: {
   track: string | undefined;
   volume: number;
   soundSet: string | undefined;
   disabled?: boolean;
   onChange: (track: string, volume: number, soundSet: string) => void;
+  /** Labels above the controls, for narrow side panels. */
+  stacked?: boolean;
 }) {
+  const labelCls = stacked ? "w-full text-xs" : "w-24 shrink-0";
   const [vol, setVol] = useState(volume);
   const current = trackById(track);
   const set = SOUND_SETS.find((s) => s.id === soundSet);
@@ -30,7 +34,7 @@ export function MusicPicker({
     <AudioPreviewProvider>
       <div className="space-y-2 rounded-lg border border-line bg-[#FAFAFC] p-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-24 shrink-0 font-semibold">Music</span>
+          <span className={`${labelCls} font-semibold`}>Music</span>
           <label className="sr-only" htmlFor="music-track">Track</label>
           <select
             id="music-track"
@@ -53,7 +57,7 @@ export function MusicPicker({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-24 shrink-0 font-semibold">Transitions</span>
+          <span className={`${labelCls} font-semibold`}>Transitions</span>
           <label className="sr-only" htmlFor="sound-set">Transition sounds</label>
           <select
             id="sound-set"

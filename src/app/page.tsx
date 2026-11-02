@@ -70,7 +70,7 @@ export default function Landing() {
             </span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate">
-            Paste a link to your store, a product page or your app. Framatic turns what you sell into three scroll-stopping video ads: scripted, storyboarded, set to music and ready to post.
+            Paste a link to your store, a product page or your app. Framatic turns what you sell into three scroll-stopping video ads, scripted and set to music. Then make them yours: edit any scene, color or format yourself, free.
           </p>
         </HeroStage>
         <PlatformStrip />
@@ -84,13 +84,13 @@ export default function Landing() {
 
       {/* 3 · How it works */}
       <Band id="how" tone="violet">
-        <SectionHead light kicker="How it works" title="One product link in. Three ads out." body="You bring what you sell. The AI does the reading, the copywriting and the storyboarding." />
+        <SectionHead light kicker="How it works" title="One product link in. Three ads out." body="You bring what you sell. The AI does the reading, the copywriting and the storyboarding. You get the final say on every scene." />
         <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Paste a product link", "A store, a product page or your app. Add an offer or goal if you have one.", "bg-cyan text-ink"],
             ["Sign in", "So we can save your brand, products, concepts and videos.", "bg-yellow text-ink"],
             ["Get 3 ad concepts", "Hooks, scripts, storyboards and music in a minute or two.", "bg-coral text-white"],
-            ["Tweak & post", "Ask for changes in plain words, export the MP4 and run it.", "bg-lime text-ink"],
+            ["Edit & post", "Change any text, timing, color, format or song yourself, for free. Export the MP4 and run it.", "bg-lime text-ink"],
           ].map(([t, b, c], i) => (
             <li key={t} className="rounded-2xl bg-white/10 p-6 ring-1 ring-white/20 backdrop-blur">
               <span className={`mb-8 grid h-10 w-10 place-items-center rounded-full text-sm font-bold ${c}`}>{i + 1}</span>
@@ -135,13 +135,22 @@ export default function Landing() {
             </ul>
           </Tile>
 
-          <Tile title="Edit in plain words" body="Ask for a change and the concept is rewritten. Format and length requests are applied exactly.">
+          <Tile title="Edit it yourself, free" body="No regenerating to fix one word. Click any scene and change its text, length, colors, animation or format. Edits never use credits.">
             <div className="space-y-2 text-xs">
-              <p className="ml-auto w-fit max-w-[85%] rounded-lg rounded-br-sm bg-violet px-2.5 py-1.5 text-white">15 seconds, vertical. Open on the product, mention free shipping.</p>
-              <p className="w-fit max-w-[85%] rounded-lg rounded-bl-sm bg-[#F2F2F6] px-2.5 py-1.5">Done: 9:16, 4 scenes, 15s. Opens on the mug, free shipping in the end card.</p>
-              <div className="flex flex-wrap gap-1">
-                {["More urgency", "Feature the bestseller", "Stronger CTA"].map((q) => <span key={q} className="rounded-full border border-line px-2 py-0.5">{q}</span>)}
+              <div className="flex items-center justify-between rounded-md border border-line px-2 py-1.5">
+                <span className="text-slate">Scene 2 headline</span>
+                <span className="font-semibold">Hot for 3 hours.<span className="ml-0.5 animate-pulse text-violet">|</span></span>
               </div>
+              <div className="flex items-center gap-2 rounded-md border border-line px-2 py-1.5">
+                <span className="text-slate">Length</span>
+                <span className="relative h-1 flex-1 rounded-full bg-[#ECECF2]"><span className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-violet" /><span className="absolute -top-1 left-[38%] h-3 w-3 rounded-full border-2 border-violet bg-white" /></span>
+                <span className="font-mono">2.5s</span>
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-line px-2 py-1.5">
+                <span className="text-slate">Colors</span>
+                <span className="flex gap-1">{["#E8572A", "#2B2D42", "#F2C14E", "#F7F3EE"].map((c) => <span key={c} className="h-4 w-4 rounded ring-1 ring-black/10" style={{ background: c }} />)}</span>
+              </div>
+              <p className="text-slate">Prefer to describe it? Ask the AI for a bigger rework.</p>
             </div>
           </Tile>
 
@@ -156,7 +165,7 @@ export default function Landing() {
             </div>
           </Tile>
 
-          <Tile title="Scene-by-scene plan" body="Timing, kinetic-type style, transitions and audio cues, all in your brand colors." className="sm:col-span-2">
+          <Tile title="Scene-by-scene plan" body="Timing, kinetic-type style, transitions and audio cues, all in your brand colors, and every part of it editable." className="sm:col-span-2">
             <div className="overflow-hidden rounded-md border border-line">
               <table className="w-full text-left font-mono text-[11px]">
                 <thead className="bg-[#FAFAFC] text-slate"><tr><th className="px-2 py-1.5 font-medium">at</th><th className="font-medium">on screen</th><th className="font-medium">motion</th><th className="hidden font-medium sm:table-cell">transition</th><th className="hidden font-medium sm:table-cell">audio</th></tr></thead>

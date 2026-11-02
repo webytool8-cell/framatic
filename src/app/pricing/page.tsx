@@ -16,7 +16,8 @@ export const metadata = {
 const ACTION_DOT: Record<string, string> = { analyze: "bg-violet", generate: "bg-cyan", regenerate: "bg-yellow", render: "bg-coral" };
 
 const faq = (CREDIT_COST: CreditCosts): [string, string][] => [
-  ["What is a credit?", `Credits are how Framatic measures AI work. A new ad project (we read your product page and write three complete concepts) uses ${CREDIT_COST.analyze}. An AI edit uses ${CREDIT_COST.regenerate}, and each MP4 export uses ${CREDIT_COST.render}. Editing text, colors, music and timing yourself is always free.`],
+  ["What is a credit?", `Credits are how Framatic measures AI work. A new ad project (we read your product page and write three complete concepts) uses ${CREDIT_COST.analyze}. An AI rework (the AI rewrites a concept for you) uses ${CREDIT_COST.regenerate}, and each MP4 export uses ${CREDIT_COST.render}. Editing anything yourself (text, timing, colors, format, music) is always free.`],
+  ["Do I have to regenerate to change something?", "No. After the first generation you can edit every scene yourself: text, length, colors, animation, format, font and music, as often as you like, for free. The AI is there when you want a bigger rework."],
   ["Do unused credits roll over?", "No. Your credits refill to your plan's amount at the start of each month."],
   ["What if a generation fails?", "You aren't charged. Credits are held while the work runs and charged only for what's delivered: if we can't read your page or an export fails, the hold is returned, and if only two of three concepts come out, you pay for two."],
   ["Can I change plans later?", "Yes. Upgrade or downgrade any time. Paid plans are opening soon, and your account and projects stay exactly as they are when you upgrade."],
@@ -76,7 +77,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           <div className="mb-12 max-w-2xl">
             <p className="mb-3 text-sm font-semibold text-violet-deep">How credits work</p>
             <h2 className="text-display text-[clamp(2.2rem,4.6vw,3.4rem)]">What a credit buys</h2>
-            <p className="mt-4 text-lg text-slate">Only AI work and exports use credits. Your own edits to text, colors, music and timing are always free.</p>
+            <p className="mt-4 text-lg text-slate">Only AI work and exports use credits. After the first generation, edit any scene yourself as much as you like: that&apos;s always free.</p>
           </div>
           <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <ul className="space-y-3">
@@ -96,8 +97,8 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
               <li className="flex items-center gap-4 rounded-2xl border-[1.5px] border-dashed border-lime-deep/40 bg-mint/60 p-4">
                 <span aria-hidden className="h-10 w-1.5 rounded-full bg-lime-deep" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">Your own edits, previews and music</p>
-                  <p className="text-sm text-slate">Change copy, colors, timing, tracks and formats yourself</p>
+                  <p className="font-semibold">Editing by hand, previews and music</p>
+                  <p className="text-sm text-slate">Change text, timing, colors, animation, format, font and music yourself</p>
                 </div>
                 <p className="text-heading text-2xl text-lime-deep">Free</p>
               </li>
@@ -113,7 +114,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
                   <tr className="border-b border-line">
                     <th className="px-5 py-3 font-medium">Plan</th>
                     <th className="px-2 py-3 font-medium">New projects</th>
-                    <th className="px-2 py-3 font-medium">AI edits</th>
+                    <th className="px-2 py-3 font-medium">AI reworks</th>
                     <th className="px-5 py-3 font-medium">MP4 exports</th>
                   </tr>
                 </thead>
@@ -132,7 +133,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
                 </tbody>
               </table>
               <p className="border-t border-line px-5 py-4 text-sm text-slate">
-                A typical project, with a couple of AI edits and two exports, uses about {typicalProjectCredits(CREDIT_COST)} credits.
+                A typical project, with a couple of AI reworks and two exports, uses about {typicalProjectCredits(CREDIT_COST)} credits.
               </p>
             </div>
           </div>

@@ -65,7 +65,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
                 balance={{ plan: "free", allowance: 30, used: 24, held: 0, left: 6, unlimited: false, periodStart: new Date("2026-11-01T00:00:00Z"), resetsAt: new Date("2026-12-01T00:00:00Z") }}
                 activity={[
                   { id: "1", label: "MP4 export", credits: -1, created_at: "2026-11-02T10:00:00Z" },
-                  { id: "2", label: "AI edit", credits: -2, created_at: "2026-11-02T09:40:00Z" },
+                  { id: "2", label: "AI rework", credits: -2, created_at: "2026-11-02T09:40:00Z" },
                   { id: "3", label: "New project", credits: 0, note: "failed, not charged", created_at: "2026-11-01T16:00:00Z" },
                   { id: "4", label: "New project", credits: -8, created_at: "2026-11-01T15:58:00Z" },
                   { id: "5", label: "Monthly credits", credits: 30, created_at: "2026-11-01T00:00:00Z" },

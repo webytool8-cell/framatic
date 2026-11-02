@@ -2,13 +2,15 @@
 import { CREDIT_COST, type CreditCosts } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { restoreSceneVersion, setPreferredConcept, updateConceptContent, updateConceptPreferences, updateMusic, updateScenes } from "@/app/actions/concepts";
+import { restoreSceneVersion, saveManualEdits, setPreferredConcept, updateConceptPreferences, updateMusic } from "@/app/actions/concepts";
 import { MusicPicker } from "@/components/app/music-picker";
 import { Button } from "@/components/ui/button";
 import { accentBorder } from "@/components/ui/card";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Tag } from "@/components/ui/status";
-import { PURPOSE_COLOR, SceneStrip, StoryboardFrame } from "@/components/app/storyboard";
+import { SceneStrip } from "@/components/app/storyboard";
+import { SceneInspector, SceneList } from "@/components/app/scene-editor";
+import { StylePanel, type StyleState } from "@/components/app/style-panel";
 import { ScenePreview } from "@/components/app/scene-preview";
 import { ExportPanel, type RenderItem } from "@/components/app/export-panel";
 import { CAMPAIGN_OBJECTIVES } from "@/lib/brand/schema";
@@ -23,7 +25,7 @@ import {
   type EditableField,
   type RegeneratableField,
 } from "@/lib/creative/concept";
-import { ASPECT_RATIOS, type ScenePlan } from "@/lib/creative/scene-plan";
+import type { Scene, ScenePlan } from "@/lib/creative/scene-plan";
 import { cn } from "@/lib/cn";
 
 type Props = {
@@ -59,16 +61,21 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
   const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
   const [scenes, setScenes] = useState(concept.plan.scenes);
   const [scenesDirty, setScenesDirty] = useState(false);
+  const originalStyle: StyleState = { aspectRatio: concept.plan.aspectRatio, palette: concept.plan.palette, fonts: concept.plan.fonts };
+  const [style, setStyle] = useState<StyleState>(originalStyle);
+  const [selectedScene, setSelectedScene] = useState(0);
+  const [tab, setTab] = useState<"scene" | "style" | "copy">("scene");
   const [prefs, setPrefs] = useState(concept.preferences);
   const [prefsDirty, setPrefsDirty] = useState(false);
   const [ask, setAsk] = useState("");
   const [selected, setSelected] = useState<Set<RegeneratableField>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
-  const [view, setView] = useState<"preview" | "frames">("preview");
   const [notice, setNotice] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [, start] = useTransition();
-  const anyDirty = dirtyFields.size > 0 || scenesDirty || prefsDirty;
-  const planPreview: ScenePlan = { ...concept.plan, scenes, durationSec: scenes.reduce((n, s) => n + s.durationSec, 0) };
+  const planPreview: ScenePlan = { ...concept.plan, ...style, scenes, durationSec: scenes.reduce((n, s) => n + s.durationSec, 0) };
+  const styleDirty = JSON.stringify(style) !== JSON.stringify(originalStyle);
+  const planDirty = scenesDirty || styleDirty;
+  const anyDirty = dirtyFields.size > 0 || planDirty || prefsDirty;
   const aiBusy = busy === "ask" || busy === "fresh" || busy === "selected" || !!busy?.startsWith("field:");
 
   function setField<K extends EditableField>(k: K, v: ConceptContent[K]) {
@@ -106,30 +113,38 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
     return { message: changed.length ? `Updated: ${changed.map((c) => FIELD_LABELS[c as RegeneratableField] ?? c).join(", ")}` : "Nothing changed. Everything is locked by your edits." };
   }
 
-  /** Save every pending manual edit in one go. */
+  /** Save every manual edit as one new version. Always free. */
   async function saveAll() {
-    if (dirtyFields.size) {
-      const r = await updateConceptContent(concept.id, Object.fromEntries([...dirtyFields].map((f) => [f, content[f as EditableField]])));
-      if (r?.error) return r;
-    }
-    if (scenesDirty) {
-      const r = await updateScenes(concept.id, scenes.map((s) => ({ id: s.id, headline: s.headline, supportingText: s.supportingText, durationSec: s.durationSec })));
+    if (dirtyFields.size || planDirty) {
+      const r = await saveManualEdits(concept.id, {
+        content: dirtyFields.size ? Object.fromEntries([...dirtyFields].map((f) => [f, content[f as EditableField]])) : undefined,
+        plan: planDirty ? { scenes, ...style } : undefined,
+      });
       if (r?.error) return r;
     }
     if (prefsDirty) {
       const r = await updateConceptPreferences(concept.id, prefs);
       if (r?.error) return r;
     }
-    return { message: "Saved" };
+    return { message: "Saved. Editing is always free." };
   }
 
-  function moveScene(i: number, dir: -1 | 1) {
-    const j = i + dir;
-    if (j < 0 || j >= scenes.length) return;
-    const next = [...scenes];
-    [next[i], next[j]] = [next[j], next[i]];
+  function changeScenes(next: Scene[], select?: number) {
     setScenes(next);
     setScenesDirty(true);
+    setNotice(null);
+    if (select !== undefined) setSelectedScene(Math.max(0, Math.min(next.length - 1, select)));
+  }
+
+  function undoAll() {
+    setContent(concept.content);
+    setScenes(concept.plan.scenes);
+    setStyle(originalStyle);
+    setPrefs(concept.preferences);
+    setDirtyFields(new Set());
+    setScenesDirty(false);
+    setPrefsDirty(false);
+    setSelectedScene((i) => Math.min(i, concept.plan.scenes.length - 1));
   }
 
   const fieldEditor = (f: EditableField, opts: { regen?: boolean } = {}) => {
@@ -164,12 +179,12 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
               <button
                 type="button"
                 disabled={!!busy || anyDirty}
-                title={anyDirty ? "Save your changes first" : `Rewrite ${label.toLowerCase()}`}
-                aria-label={`Rewrite ${label.toLowerCase()}`}
+                title={anyDirty ? "Save your changes first" : `Let the AI rewrite ${label.toLowerCase()} (${creditCosts.regenerate} credits)`}
+                aria-label={`AI rewrite ${label.toLowerCase()}`}
                 onClick={() => run(`field:${f}`, () => regenerate({ fields: [f] }))}
                 className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-violet-deep hover:bg-lavender disabled:opacity-40"
               >
-                {busy === `field:${f}` ? "…" : "↻ Rewrite"}
+                {busy === `field:${f}` ? "…" : "✦ AI"}
               </button>
             )}
           </span>
@@ -196,74 +211,89 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
 
       {notice && <Alert tone={notice.tone} className="mb-6">{notice.text}</Alert>}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* Preview + storyboard */}
-        <section aria-labelledby="sb-title">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+        {/* Preview + scenes */}
+        <section aria-labelledby="sb-title" className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h3 id="sb-title" className="text-heading text-lg">Storyboard</h3>
-              <div role="tablist" aria-label="View" className="flex rounded-lg border border-line bg-white p-0.5 text-sm">
-                {(["preview", "frames"] as const).map((v) => (
-                  <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cn("rounded-md px-2.5 py-0.5 font-medium transition-colors", view === v ? "bg-ink text-white" : "text-slate hover:text-ink")}>
-                    {v === "preview" ? "▶ Preview" : "Edit scenes"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="text-xs text-slate">{view === "preview" ? "Live preview with music. Press play to hear it." : "Click any line to edit it."}</p>
+            <h3 id="sb-title" className="text-heading text-lg">Your ad</h3>
+            <p className="text-xs text-slate">{anyDirty ? "Preview shows your unsaved changes." : "Live preview with music. Press play to hear it."}</p>
           </div>
-          {view === "preview" && (
-            <div className="rounded-xl border border-line bg-white p-3">
-              <ScenePreview plan={planPreview} logoUrl={logoUrl} productName={productName} />
-              <div className="mt-2">
-                <MusicPicker
-                  track={concept.plan.music.track}
-                  volume={concept.plan.music.volume ?? 0.7}
-                  soundSet={concept.plan.music.soundSet}
-                  disabled={!!busy || anyDirty}
-                  onChange={(t, v, set) => run("music", () => updateMusic(concept.id, t, v, set))}
-                />
-              </div>
-              {scenesDirty && <p className="mt-2 text-xs text-slate">Showing your unsaved edits. Save them before changing music.</p>}
+          <div className="rounded-xl border border-line bg-white p-3">
+            <ScenePreview key={`${style.aspectRatio}-${scenes.length}`} plan={planPreview} logoUrl={logoUrl} productName={productName} />
+          </div>
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Scenes</h4>
+              <p className="text-xs text-slate">Pick a scene to edit it. {planPreview.durationSec.toFixed(1)}s in total.</p>
             </div>
-          )}
-          {view === "frames" && (
-          <ol className={cn("grid gap-4", planPreview.aspectRatio === "9:16" || planPreview.aspectRatio === "4:5" ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4" : "sm:grid-cols-2")}>
-            {scenes.map((s, i) => (
-              <li key={s.id} className="group rounded-xl border-[1.5px] border-line bg-white p-2.5 transition-colors duration-200 hover:border-line-strong">
-                <div className="[container-type:inline-size]">
-                  <StoryboardFrame scene={s} plan={planPreview} index={i} logoUrl={logoUrl} />
-                </div>
-                <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="flex items-center gap-1.5 text-slate">
-                    <span className="h-2 w-2 rounded-full" style={{ background: PURPOSE_COLOR[s.purpose] }} />
-                    {s.purpose}
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    <label className="sr-only" htmlFor={`dur-${s.id}`}>Scene {i + 1} length in seconds</label>
-                    <input id={`dur-${s.id}`} type="number" min={0.6} max={12} step={0.5} value={s.durationSec} onChange={(e) => { const v = Math.max(0.6, Math.min(12, +e.target.value || 0.6)); setScenes(scenes.map((x) => (x.id === s.id ? { ...x, durationSec: v } : x))); setScenesDirty(true); }} className="w-12 rounded border border-transparent px-1 text-right font-mono hover:border-line focus:border-violet focus:outline-none" />
-                    <span className="text-slate">s</span>
-                    <button type="button" aria-label={`Move scene ${i + 1} earlier`} disabled={i === 0} onClick={() => moveScene(i, -1)} className="ml-1 grid h-6 w-6 place-items-center rounded text-slate hover:bg-lavender disabled:opacity-30">←</button>
-                    <button type="button" aria-label={`Move scene ${i + 1} later`} disabled={i === scenes.length - 1} onClick={() => moveScene(i, 1)} className="grid h-6 w-6 place-items-center rounded text-slate hover:bg-lavender disabled:opacity-30">→</button>
-                  </span>
-                </div>
-                <label className="sr-only" htmlFor={`h-${s.id}`}>Scene {i + 1} headline</label>
-                <input id={`h-${s.id}`} value={s.headline} maxLength={90} onChange={(e) => { setScenes(scenes.map((x) => (x.id === s.id ? { ...x, headline: e.target.value } : x))); setScenesDirty(true); }} className="mt-1 w-full rounded-md border border-transparent px-1.5 py-1 font-semibold hover:border-line focus:border-violet focus:outline-none" />
-                <label className="sr-only" htmlFor={`t-${s.id}`}>Scene {i + 1} supporting text</label>
-                <input id={`t-${s.id}`} value={s.supportingText} maxLength={160} placeholder="Add supporting text" onChange={(e) => { setScenes(scenes.map((x) => (x.id === s.id ? { ...x, supportingText: e.target.value } : x))); setScenesDirty(true); }} className="w-full rounded-md border border-transparent px-1.5 py-0.5 text-sm text-slate placeholder:text-slate/50 hover:border-line focus:border-violet focus:outline-none" />
-              </li>
-            ))}
-          </ol>
-          )}
+            <SceneList
+              scenes={scenes}
+              plan={planPreview}
+              selected={selectedScene}
+              logoUrl={logoUrl}
+              onSelect={(i) => { setSelectedScene(i); setTab("scene"); }}
+              onChange={(next, sel) => { changeScenes(next, sel); setTab("scene"); }}
+            />
+          </div>
         </section>
 
-        {/* Right rail: ask + key copy */}
-        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+        {/* Right rail: manual editor first, AI second */}
+        <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto lg:pb-2">
+          <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="edit-title">
+            <div className="flex items-center justify-between gap-2 border-b border-line px-4 pt-4">
+              <h3 id="edit-title" className="text-heading pb-3 text-lg">Edit</h3>
+              <span className="mb-3 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-lime-deep">Free · no credits</span>
+            </div>
+            <div role="tablist" aria-label="Edit" className="flex gap-1 border-b border-line px-3">
+              {([["scene", `Scene ${selectedScene + 1}`], ["style", "Look & format"], ["copy", "Copy"]] as const).map(([k, label]) => (
+                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn("-mb-px border-b-2 px-2.5 py-2 text-sm font-medium", tab === k ? "border-violet text-ink" : "border-transparent text-slate hover:text-ink")}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="p-4">
+              {tab === "scene" && <SceneInspector scenes={scenes} index={Math.min(selectedScene, scenes.length - 1)} plan={planPreview} onChange={changeScenes} />}
+              {tab === "style" && (
+                <div className="space-y-6">
+                  <StylePanel value={style} original={originalStyle} onChange={(v) => { setStyle(v); setNotice(null); }} />
+                  <div>
+                    <p className="mb-1.5 text-sm font-semibold">Music & sound</p>
+                    <MusicPicker
+                      track={concept.plan.music.track}
+                      volume={concept.plan.music.volume ?? 0.7}
+                      soundSet={concept.plan.music.soundSet}
+                      disabled={!!busy || anyDirty}
+                      stacked
+                      onChange={(t, v, set) => run("music", () => updateMusic(concept.id, t, v, set))}
+                    />
+                    {anyDirty && <p className="mt-1 text-xs text-slate">Save your other changes before switching music.</p>}
+                  </div>
+                </div>
+              )}
+              {tab === "copy" && (
+                <div className="space-y-4">
+                  {fieldEditor("headline")}
+                  {fieldEditor("supportingCopy")}
+                  {fieldEditor("cta")}
+                  <p className="text-xs text-slate">This is the concept&apos;s main copy. On-screen text for each scene is under Scene.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
           <ExportPanel renderCost={creditCosts.render} conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
+
           {aiReady && (
-            <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white p-4 shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="ask-title">
-              <h3 id="ask-title" className="text-heading mb-2 text-lg">Ask for changes</h3>
+            <details className="group rounded-[var(--radius-card)] border-[1.5px] border-line bg-white" aria-labelledby="ask-title">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-4">
+                <span>
+                  <span id="ask-title" className="text-heading block text-lg">✦ Ask the AI instead</span>
+                  <span className="text-xs text-slate">Describe a bigger change and the AI reworks the concept · {creditCosts.regenerate} credits</span>
+                </span>
+                <span aria-hidden className="text-slate transition-transform duration-200 group-open:rotate-45">+</span>
+              </summary>
               <form
+                className="border-t border-line p-4"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (ask.trim().length < 2) return;
@@ -279,41 +309,38 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                     </button>
                   ))}
                 </div>
-                <Button type="submit" className="w-full" disabled={aiBusy || anyDirty || ask.trim().length < 2}>
-                  {busy === "ask" ? "Reworking the concept…" : "Apply changes"}
+                <Button type="submit" variant="secondary" className="w-full" disabled={aiBusy || anyDirty || ask.trim().length < 2}>
+                  {busy === "ask" ? "Reworking the concept…" : `Rework with AI · ${creditCosts.regenerate} credits`}
                 </Button>
-                <p className="mt-2 text-xs text-slate">{anyDirty ? "Save your edits first." : `Each AI change uses ${creditCosts.regenerate} credits. Your own edits are free.`}</p>
+                <Button type="button" variant="ghost" className="mt-2 w-full" disabled={!!busy || anyDirty} onClick={() => run("fresh", () => regenerate({}))}>
+                  {busy === "fresh" ? "Writing a fresh take…" : `Fresh take, keeping your edits · ${creditCosts.regenerate} credits`}
+                </Button>
+                {anyDirty && <p className="mt-2 text-xs text-slate">Save your edits first.</p>}
               </form>
-            </section>
-          )}
-
-          <section className="space-y-4 rounded-[var(--radius-card)] border-[1.5px] border-line bg-white p-4" aria-label="Main copy">
-            {fieldEditor("headline")}
-            {fieldEditor("supportingCopy")}
-            {fieldEditor("cta")}
-          </section>
-
-          {anyDirty ? (
-            <div className="flex gap-2">
-              <Button className="flex-1" disabled={!!busy} onClick={() => run("save", saveAll, () => { setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); })}>
-                {busy === "save" ? "Saving…" : "Save my edits"}
-              </Button>
-              <Button variant="ghost" disabled={!!busy} onClick={() => { setContent(concept.content); setScenes(concept.plan.scenes); setPrefs(concept.preferences); setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); }}>Undo</Button>
-            </div>
-          ) : (
-            aiReady && (
-              <Button variant="secondary" className="w-full" disabled={!!busy} onClick={() => run("fresh", () => regenerate({}))}>
-                {busy === "fresh" ? "Writing a fresh take…" : "Try a fresh take (keeps your edits)"}
-              </Button>
-            )
+            </details>
           )}
         </div>
       </div>
 
+      {/* Unsaved changes bar */}
+      {anyDirty && (
+        <div role="region" aria-label="Unsaved changes" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:left-60">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-8 lg:px-12">
+            <p className="text-sm"><span className="font-semibold">Unsaved changes.</span> <span className="text-slate">Saving is free{concept.plan.music.track && concept.plan.music.track !== "none" ? "; scene lengths snap to the beat" : ""}.</span></p>
+            <div className="flex gap-2">
+              <Button variant="ghost" disabled={!!busy} onClick={undoAll}>Undo all</Button>
+              <Button disabled={!!busy} onClick={() => run("save", saveAll, () => { setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); })}>
+                {busy === "save" ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Advanced */}
       <details className="group mt-10">
         <summary className="flex cursor-pointer select-none items-center justify-between rounded-[var(--radius-card)] border-[1.5px] border-dashed border-line-strong px-6 py-4 font-semibold hover:border-ink">
-          More controls: all copy, format, regenerate parts, motion details, history
+          More: all copy, AI preferences, version history, motion details
           <span aria-hidden className="text-slate transition-transform duration-200 group-open:rotate-45">+</span>
         </summary>
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -324,13 +351,9 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
 
           <div className="space-y-6">
             <section className="rounded-[var(--radius-card)] border-[1.5px] border-yellow bg-white p-6">
-              <h3 className="text-heading mb-4 text-lg">Format & feel</h3>
+              <h3 className="text-heading mb-1 text-lg">AI preferences</h3>
+              <p className="mb-4 text-sm text-slate">Only used when the AI writes or reworks this concept. To change the ad now, use Edit.</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Format" htmlFor="p-ar">
-                  <Select id="p-ar" value={prefs.aspectRatio} onChange={(e) => { setPrefs({ ...prefs, aspectRatio: e.target.value as CreativePreferences["aspectRatio"] }); setPrefsDirty(true); }}>
-                    {ASPECT_RATIOS.map((a) => <option key={a} value={a}>{a} {a === "9:16" ? "Stories/Reels" : a === "16:9" ? "YouTube/Web" : a === "1:1" ? "Feed" : "Portrait feed"}</option>)}
-                  </Select>
-                </Field>
                 <Field label={`Target length: ${prefs.targetDurationSec}s`} htmlFor="p-dur">
                   <input id="p-dur" type="range" min={6} max={60} step={1} value={prefs.targetDurationSec} onChange={(e) => { setPrefs({ ...prefs, targetDurationSec: +e.target.value }); setPrefsDirty(true); }} className="w-full accent-violet" />
                 </Field>
@@ -344,12 +367,12 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                   <Input id="p-music" value={prefs.musicMood ?? ""} placeholder="e.g. warm synth-pop" onChange={(e) => { setPrefs({ ...prefs, musicMood: e.target.value || undefined }); setPrefsDirty(true); }} />
                 </Field>
               </div>
-              <p className="mt-3 text-xs text-slate">These apply the next time the AI rewrites this concept.</p>
             </section>
 
             {aiReady && (
               <section className="rounded-[var(--radius-card)] border-[1.5px] border-violet bg-white p-6">
-                <h3 className="text-heading mb-4 text-lg">Rewrite specific parts</h3>
+                <h3 className="text-heading mb-1 text-lg">AI: rewrite specific parts</h3>
+                <p className="mb-4 text-sm text-slate">{creditCosts.regenerate} credits per rewrite. Anything you edited yourself stays as it is.</p>
                 <div className="flex flex-wrap gap-2">
                   {REGENERATABLE_FIELDS.map((f) => {
                     const on = selected.has(f);

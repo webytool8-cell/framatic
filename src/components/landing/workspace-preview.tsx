@@ -77,8 +77,8 @@ export function WorkspacePreview({ sample }: { sample: SampleProduct }) {
             ))}
           </dl>
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-line px-2.5 py-2">
-            <span className="flex-1 truncate text-xs text-slate">Make it punchier, 15 seconds, vertical…</span>
-            <span className="rounded-md bg-violet px-2 py-1 text-[11px] font-semibold text-white">Apply</span>
+            <span className="flex-1 truncate text-xs text-slate">Edit any scene, color or format yourself</span>
+            <span className="rounded-md bg-violet px-2 py-1 text-[11px] font-semibold text-white">Edit</span>
           </div>
         </div>
       </div>

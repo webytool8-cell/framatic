@@ -27,7 +27,7 @@ export const OP_LABEL: Record<Op, string> = {
   analyze: "New project (page + 3 concepts)",
   analyze_only: "Re-read product page",
   generate: "Three fresh concepts",
-  regenerate: "AI edit",
+  regenerate: "AI rework",
   render: "MP4 export",
 };
 

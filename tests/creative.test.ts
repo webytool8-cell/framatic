@@ -131,3 +131,24 @@ describe("AI error messages", () => {
     expect(describeLLMError({ status: 400, message: "400 tools.0.input_schema: bad" })).toMatch(/rejected the request: tools/);
   });
 });
+
+describe("manual editing", () => {
+  it("hand-added scenes and style changes make a valid plan", async () => {
+    const { blankScene } = await import("@/components/app/scene-editor");
+    const { Scene, ScenePlan, normalizeScenePlan, snapToBeats } = await import("@/lib/creative/scene-plan");
+    const { samplePlan } = await import("@/lib/samples");
+    const added = Scene.parse(blankScene());
+    const edited = {
+      ...samplePlan,
+      aspectRatio: "9:16" as const,
+      palette: { ...samplePlan.palette, primary: "#123456" },
+      fonts: { heading: "Playfair Display", body: samplePlan.fonts.body },
+      scenes: [samplePlan.scenes[0], added, ...samplePlan.scenes.slice(1)].map((s, i) => (i === 0 ? { ...s, durationSec: 2.3, headline: "My own words" } : s)),
+    };
+    const plan = ScenePlan.parse(normalizeScenePlan(snapToBeats(edited, 120), "Shop now"));
+    expect(plan.scenes).toHaveLength(samplePlan.scenes.length + 1);
+    expect(plan.scenes[0]).toMatchObject({ headline: "My own words", durationSec: 2.25 }); // snapped to the half-beat at 120 bpm
+    expect(plan.aspectRatio).toBe("9:16");
+    expect(plan.scenes.at(-1)?.cta?.text).toBeTruthy();
+  });
+});

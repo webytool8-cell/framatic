@@ -18,7 +18,7 @@ export const LIMITS: Record<UsageKind, { max: number; windowMinutes: number }> =
 const HOURLY_LABEL: Record<UsageKind, string> = {
   analyze: "new projects",
   generate: "concept generation",
-  regenerate: "AI edits",
+  regenerate: "AI reworks",
   render: "video exports",
   redeem: "access code attempts",
 };

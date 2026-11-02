@@ -80,7 +80,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-heading text-lg">3 concepts</h2>
-          <p className="text-sm text-slate">Open one to tweak it. Frames are storyboard sketches, not rendered video.</p>
+          <p className="text-sm text-slate">Open one to edit it: text, timing, colors, format and music. Your edits are free.</p>
         </div>
         {aiReady && !streaming && <JobRunner projectId={id} kind="generate" status={status} label={`Try three new ones · ${costs.generate} credits`} variant="secondary" />}
       </div>
@@ -114,7 +114,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             </div>
           ))}
       </div>
-      <p className="text-xs text-slate">“Try three new ones” keeps any lines you&apos;ve edited yourself.</p>
+      <p className="text-xs text-slate">“Try three new ones” writes new concepts with AI and keeps anything you&apos;ve edited yourself.</p>
     </div>
   );
 }

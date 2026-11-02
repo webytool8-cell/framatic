@@ -92,14 +92,14 @@ export const CREDIT_COST: CreditCosts = {
 export const CREDIT_ACTIONS: { kind: ChargeKind; label: string; detail: string }[] = [
   { kind: "analyze", label: "New ad project", detail: "Reads your product page and writes 3 complete ad concepts" },
   { kind: "generate", label: "Three fresh concepts", detail: "A new set of 3 for an existing project" },
-  { kind: "regenerate", label: "AI edit", detail: "Rewrite or regenerate one concept in plain words" },
+  { kind: "regenerate", label: "AI rework", detail: "Have the AI rewrite a concept from a plain-words request" },
   { kind: "render", label: "MP4 export", detail: "One finished 1080p video, any format" },
 ];
 
 export const KIND_LABEL: Record<string, string> = {
   analyze: "New project",
   generate: "Three fresh concepts",
-  regenerate: "AI edit",
+  regenerate: "AI rework",
   analyze_only: "Re-read product page",
   render: "MP4 export",
   refund: "Refund",
