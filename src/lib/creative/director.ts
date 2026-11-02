@@ -156,9 +156,10 @@ export function finalizeConcept(ai: AIConcept, brand: BrandProfile, prefs: Creat
   // Pick music from the built-in library (keeping an explicit choice) and cut scenes on the beat.
   const requested = prefs.musicTrack ?? ai.scenePlan.music.track;
   const track = requested === "none" ? null : (trackById(requested) ?? pickTrack([prefs.musicMood ?? "", ai.musicMood, ai.scenePlan.music.mood, ai.pacing], ai.scenePlan.music.bpm));
+  const soundSet = prefs.soundSet ?? track?.soundSet ?? "airy";
   const withMusic: ScenePlanT = track
-    ? snapToBeats({ ...ai.scenePlan, music: { ...ai.scenePlan.music, track: track.id } }, track.bpm)
-    : { ...ai.scenePlan, music: { ...ai.scenePlan.music, track: "none" } };
+    ? snapToBeats({ ...ai.scenePlan, music: { ...ai.scenePlan.music, track: track.id, soundSet } }, track.bpm)
+    : { ...ai.scenePlan, music: { ...ai.scenePlan.music, track: "none", soundSet } };
   const plan: ScenePlanT = normalizeScenePlan(
     {
       ...withMusic,

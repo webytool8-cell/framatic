@@ -193,6 +193,50 @@ def bell(m, dur=1.2):
     return np.sin(2 * np.pi * f * t + mod) * env_exp(n, 0.6) * 0.18
 
 
+def ks_pluck(m, dur=1.2, bright=0.5, decay=0.996):
+    """Karplus-Strong plucked string (acoustic guitar-ish)."""
+    n = int(dur * SR)
+    f = mtof(m)
+    N = max(2, int(SR / f))
+    burst = np.zeros(n)
+    k = min(N, n)
+    burst[:k] = lp(rng.standard_normal(k), 2000 + 6000 * bright, 1)
+    a = np.zeros(N + 2)
+    a[0] = 1
+    a[N] = -0.5 * decay
+    a[N + 1] = -0.5 * decay
+    y = signal.lfilter([1], a, burst)
+    return y * adsr(n, 0.001, 0.05, 1.0, 0.08) * 0.5
+
+
+def piano(m, dur, vel=1.0):
+    n = int(dur * SR)
+    f = mtof(m)
+    t = np.arange(n) / SR
+    x = np.zeros(n)
+    for h, (amp, dec) in enumerate([(1.0, 1.6), (0.45, 0.9), (0.22, 0.6), (0.12, 0.4), (0.06, 0.25)], start=1):
+        x += amp * np.sin(2 * np.pi * f * h * t * (1 + 0.0004 * h * h)) * env_exp(n, dec)
+    ham = hp(rng.standard_normal(n), 2000) * env_exp(n, 0.006) * 0.15
+    return (x + ham) * adsr(n, 0.002, 0.05, 1.0, 0.1) * 0.2 * vel
+
+
+def synth_lead(m, dur, cutoff=2600):
+    n = int(dur * SR)
+    f = mtof(m)
+    t = np.arange(n) / SR
+    vib = 1 + 0.004 * np.sin(2 * np.pi * 5.5 * t) * np.clip(t * 3, 0, 1)
+    x = saw(f, n) * 0.5 + saw(f * 1.005, n, 0.3) * 0.5
+    x = x * 1.0 + np.sin(2 * np.pi * f * vib * t) * 0.2
+    return lp(x, cutoff, 2) * adsr(n, 0.01, 0.15, 0.7, 0.12) * 0.32
+
+
+def tom(freq=90):
+    n = int(0.5 * SR)
+    t = np.arange(n) / SR
+    f = freq + freq * 0.8 * np.exp(-t * 18)
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * env_exp(n, 0.18) * 0.8
+
+
 # ---------- arrangement ----------
 def chord_notes(root, quality):
     shapes = {"maj": [0, 4, 7], "min": [0, 3, 7], "maj7": [0, 4, 7, 11], "min7": [0, 3, 7, 10], "sus2": [0, 2, 7], "add9": [0, 4, 7, 14]}
@@ -257,6 +301,28 @@ def render_track(spec):
                 arp = [notes[i % len(notes)] + 24 + (12 if i % 8 >= 6 else 0) for i in range(8)]
                 for i, m in enumerate(arp):
                     place(lead, pluck(m, beat * 0.6, spec.get("arp_cutoff", 3200), spec.get("square_arp", False)), t0 + i * beat / 2 + (swing * beat / 2 if i % 2 else 0), 0.8)
+            if "guitar" in layers:
+                strum = spec.get("strum", [0, 1, 1.5, 2.5, 3])
+                for hit_i, pos in enumerate(strum):
+                    for j, m in enumerate(sorted(notes)):
+                        down = hit_i % 2 == 0
+                        place(pads, ks_pluck(m + (12 if j > 0 else 0), beat * 2.2, 0.55 if down else 0.35), t0 + pos * beat + (j if down else len(notes) - j) * 0.012, 0.75 if down else 0.5)
+            if "piano" in layers:
+                for pos in spec.get("piano_rhythm", [0, 2]):
+                    for m in notes:
+                        place(pads, piano(m, beat * 3), t0 + pos * beat, 0.9)
+                if spec.get("piano_melody"):
+                    mel = spec["piano_melody"][bar_i % len(spec["piano_melody"])]
+                    for k2, mm in enumerate(mel):
+                        if mm:
+                            place(lead, piano(mm, beat * 1.5, 0.8), t0 + k2 * beat, 1.0)
+            if "lead" in layers:
+                mel = spec["lead_melody"][bar_i % len(spec["lead_melody"])]
+                for k2, (pos, mm, ln) in enumerate(mel):
+                    place(lead, synth_lead(mm, ln * beat, spec.get("lead_cutoff", 2600)), t0 + pos * beat, 1.0)
+            if "toms" in layers and bb == bars - 1:
+                for k2, fr in enumerate((140, 120, 100, 80)):
+                    place(drums, tom(fr), t0 + (3 + k2 / 4) * beat, 0.7)
             if "bells" in layers and bb % 2 == 0:
                 for i, m in enumerate([notes[-1] + 24, notes[1] + 24]):
                     place(lead, bell(m), t0 + i * beat * 2, 1.0)
@@ -329,6 +395,124 @@ def swell_sfx():
     return reverb(x * (t / 2.5) ** 1.5 * 1.6, 1.2, 0.4)
 
 
+# ---------- transition sounds ----------
+def sweep(d, f0, f1, lo_q=0.5, hi_q=1.6, curve=2.0):
+    n = int(d * SR)
+    x = rng.standard_normal(n)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    chunk = 512
+    for i in range(0, n, chunk):
+        p = (t[i] / d) ** (1 / curve)
+        c = f0 + (f1 - f0) * p
+        seg = bp(x[i : i + chunk + 64], max(120, c * lo_q), min(17000, c * hi_q), 1)
+        out[i : i + chunk] = seg[: len(out[i : i + chunk])]
+    return out
+
+
+def tr_whoosh_air():
+    d = 0.9
+    t = t_arr(d)
+    return reverb(sweep(d, 500, 3500) * np.sin(np.pi * t / d) ** 2, 0.9, 0.35) * 0.5
+
+
+def tr_whoosh_fast():
+    d = 0.35
+    t = t_arr(d)
+    return sweep(d, 1500, 9000, curve=1.0) * np.sin(np.pi * t / d) ** 3 * 0.8
+
+
+def tr_swish():
+    d = 0.4
+    t = t_arr(d)
+    return hp(sweep(d, 7000, 2500, curve=1.0), 1500) * np.sin(np.pi * t / d) ** 2 * 0.7
+
+
+def tr_swipe_up():
+    d = 0.5
+    t = t_arr(d)
+    tone = np.sin(2 * np.pi * np.cumsum(300 * 2 ** (2.5 * t / d)) / SR) * 0.15
+    return (sweep(d, 600, 8000, curve=1.0) * 0.6 + tone) * (t / d) ** 1.5 * np.exp(-((t - d) ** 2) / 0.002 * 0) * 0.9
+
+
+def tr_pop():
+    n = int(0.18 * SR)
+    t = np.arange(n) / SR
+    f = 380 + 900 * np.exp(-t * 60)
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * env_exp(n, 0.04) * 0.8
+
+
+def tr_snap():
+    n = int(0.2 * SR)
+    x = bp(rng.standard_normal(n), 1800, 6000, 2) * env_exp(n, 0.012)
+    body = np.sin(2 * np.pi * 1100 * np.arange(n) / SR) * env_exp(n, 0.01) * 0.4
+    return reverb(x + body, 0.5, 0.2) * 0.9
+
+
+def tr_blip():
+    n = int(0.16 * SR)
+    t = np.arange(n) / SR
+    x = np.sign(np.sin(2 * np.pi * np.where(t < 0.05, 1320, 1760) * t)) * 0.25
+    return lp(x, 6000) * adsr(n, 0.002, 0.03, 0.6, 0.05) * 0.6
+
+
+def tr_glitch():
+    d = 0.32
+    n = int(d * SR)
+    out = np.zeros(n)
+    src = saw(220, n) * 0.4 + rng.standard_normal(n) * 0.2
+    step = int(0.026 * SR)
+    for i in range(0, n, step):
+        if rng.random() < 0.65:
+            seg = src[i : i + step]
+            crush = np.round(seg * 6) / 6
+            rep = np.resize(crush[: max(32, len(crush) // int(rng.integers(1, 4)))], len(seg))
+            out[i : i + len(seg)] = rep * (1 - i / n)
+    return lp(out, 7000) * 0.9
+
+
+def tr_shimmer():
+    d = 1.0
+    n = int(d * SR)
+    out = np.zeros(n)
+    for k, m in enumerate((84, 88, 91, 96)):
+        place(out, bell(m, 0.9) * 1.6, k * 0.045, 1.0)
+    return reverb(out, 1.0, 0.45) * 0.9
+
+
+def tr_thump():
+    n = int(0.6 * SR)
+    t = np.arange(n) / SR
+    f = 55 + 70 * np.exp(-t * 25)
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * env_exp(n, 0.2)
+    air = lp(rng.standard_normal(n), 900) * env_exp(n, 0.05) * 0.3
+    return np.tanh((body + air) * 1.5) * 0.85
+
+
+def tr_reverse_swell():
+    d = 1.1
+    t = t_arr(d)
+    cym = hp(rng.standard_normal(len(t)), 5000) * 0.3 + sweep(d, 800, 6000, curve=1.0) * 0.4
+    return reverb(cym * (t / d) ** 3, 0.8, 0.3) * 0.9
+
+
+def tr_tape():
+    d = 0.45
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    f = 600 * np.exp(-t * 6)
+    tone = saw(1, n)  # placeholder phase
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * 0.35 + lp(rng.standard_normal(n), 2500) * 0.15
+    return x * env_exp(n, 0.2) * adsr(n, 0.005, 0.1, 0.8, 0.1)
+
+
+TRANSITIONS = {
+    "whoosh-air": tr_whoosh_air, "whoosh-fast": tr_whoosh_fast, "swish": tr_swish, "swipe-up": tr_swipe_up,
+    "pop": tr_pop, "snap": tr_snap, "blip": tr_blip, "glitch": tr_glitch, "shimmer": tr_shimmer,
+    "thump": tr_thump, "reverse-swell": tr_reverse_swell, "tape-stop": tr_tape,
+}
+
+
 # ---------- library ----------
 TRACKS = [
     {
@@ -370,6 +554,46 @@ TRACKS = [
     },
 ]
 
+TRACKS += [
+    {
+        "id": "acoustic-sunrise", "title": "Acoustic Sunrise", "bpm": 104,
+        "moods": ["acoustic", "organic", "warm", "friendly", "natural", "honest", "sunny", "community", "wholesome", "folk", "handmade"],
+        "progression": [(55, "maj"), (62, "maj"), (64, "min"), (60, "maj")],
+        "sections": [("intro", 2, ["guitar"]), ("a", 8, ["guitar", "kick", "snare", "shaker", "bass"]), ("b", 8, ["guitar", "kick", "snare", "shaker", "bass", "bells"]), ("a2", 8, ["guitar", "kick", "snare", "shaker", "bass"]), ("out", 2, ["guitar"])],
+        "clap": True, "bass_pattern": [(0, 1.5), (2, 1.5)], "bass_cutoff": 420, "drum_gain": 0.75, "sc_depth": 0.15,
+    },
+    {
+        "id": "deep-house", "title": "Deep House", "bpm": 122,
+        "moods": ["stylish", "fashion", "sleek", "luxury", "ecommerce", "shopping", "lifestyle", "chic", "smooth", "cool", "elegant", "premium", "night"],
+        "progression": [(57, "min7"), (53, "maj7"), (55, "maj"), (52, "min7")],
+        "sections": [("intro", 2, ["kick", "hats", "keys"]), ("a", 8, ["kick", "hats", "snare", "bass", "keys", "pad"]), ("b", 8, ["kick", "hats", "snare", "bass", "keys", "pad", "shaker"]), ("a2", 8, ["kick", "hats", "snare", "bass", "keys"]), ("out", 2, ["keys", "pad"])],
+        "four_on_floor": True, "clap": True, "open_hats": True, "bass_pattern": [(0.5, 0.5), (1.75, 0.25), (2.5, 0.5), (3.5, 0.5)], "bass_cutoff": 450, "keys_rhythm": [0.5, 1.5, 2.75], "pad_cutoff": 1300, "pad_gain": 0.6, "sc_depth": 0.55,
+    },
+    {
+        "id": "boom-bap", "title": "Boom Bap", "bpm": 90, "swing": 0.18,
+        "moods": ["hip-hop", "hiphop", "urban", "streetwear", "street", "gritty", "swagger", "bold", "edgy", "creator", "rap", "groovy"],
+        "progression": [(57, "min7"), (57, "min7"), (53, "maj7"), (55, "min7")],
+        "sections": [("intro", 1, ["keys"]), ("a", 8, ["kick", "snare", "hats", "bass", "keys"]), ("b", 8, ["kick", "snare", "hats", "bass", "keys", "bells"]), ("a2", 8, ["kick", "snare", "hats", "bass", "keys"])],
+        "kick_push": True, "bass_pattern": [(0, 0.75), (0.75, 0.5), (2.5, 1.0)], "bass_cutoff": 330, "keys_rhythm": [0, 2.25], "drum_gain": 1.1, "sc_depth": 0.2,
+    },
+    {
+        "id": "synthwave", "title": "Synthwave", "bpm": 100,
+        "moods": ["retro", "80s", "nostalgic", "neon", "synthwave", "gaming", "night", "vintage", "dreamy", "futuristic"],
+        "progression": [(57, "min"), (53, "maj"), (60, "maj"), (55, "maj")],
+        "sections": [("intro", 2, ["pad", "arp"]), ("a", 8, ["kick", "snare", "hats", "bass", "pad", "arp"]), ("b", 8, ["kick", "snare", "hats", "bass", "pad", "arp", "lead", "toms"]), ("a2", 8, ["kick", "snare", "hats", "bass", "pad", "lead"]), ("out", 2, ["pad"])],
+        "bass_pattern": [(0, 0.5), (0.5, 0.5), (1, 0.5), (1.5, 0.5), (2, 0.5), (2.5, 0.5), (3, 0.5), (3.5, 0.5)], "bass_cutoff": 650, "arp_cutoff": 2200, "pad_cutoff": 2000,
+        "lead_melody": [[(0, 81, 1.5), (1.5, 79, 0.5), (2, 76, 2)], [(0, 77, 1.5), (1.5, 76, 0.5), (2, 72, 2)], [(0, 76, 1), (1, 79, 1), (2, 84, 2)], [(0, 79, 3), (3, 74, 1)]],
+    },
+    {
+        "id": "soft-piano", "title": "Soft Piano", "bpm": 74,
+        "moods": ["emotional", "heartfelt", "elegant", "minimal", "calm", "thoughtful", "gentle", "sincere", "healthcare", "wellness", "story", "tender", "reflective"],
+        "progression": [(60, "add9"), (55, "maj"), (57, "min7"), (53, "maj7")],
+        "sections": [("a", 4, ["piano"]), ("b", 8, ["piano", "pad"]), ("c", 8, ["piano", "pad", "bass"]), ("out", 2, ["piano"])],
+        "piano_rhythm": [0, 2], "piano_melody": [[76, 0, 74, 0], [74, 0, 71, 72], [72, 0, 76, 0], [69, 0, 0, 0]],
+        "bass_pattern": [(0, 3.5)], "bass_cutoff": 300, "pad_cutoff": 900, "pad_gain": 0.45, "sc_depth": 0.0,
+    },
+]
+
 SFX = {"whoosh": whoosh_sfx, "riser": lambda: riser_sfx(2.0), "hit": hit_sfx, "beat_drop": impact_sfx, "click": click_sfx, "swell": swell_sfx}
 
 
@@ -380,21 +604,34 @@ def write(path, x):
     wavfile.write(path, SR, (stereo * 32767).astype(np.int16))
 
 
-def main(out_dir):
+def main(out_dir, only=None):
+    """only: optional set of ids (tracks, sfx or transition sounds) to (re)generate."""
     out = Path(out_dir)
-    (out / "music").mkdir(parents=True, exist_ok=True)
-    (out / "sfx").mkdir(parents=True, exist_ok=True)
+    for d in ("music", "sfx", "transitions"):
+        (out / d).mkdir(parents=True, exist_ok=True)
     manifest = []
     for spec in TRACKS:
-        audio, length = render_track(spec)
-        write(out / "music" / f"{spec['id']}.wav", audio)
+        length = sum(b for _, b, _ in spec["sections"]) * 4 * 60 / spec["bpm"]
+        if not only or spec["id"] in only:
+            audio, length = render_track(spec)
+            write(out / "music" / f"{spec['id']}.wav", audio)
+            print("track", spec["id"], round(length, 1), "s")
         manifest.append({"id": spec["id"], "title": spec["title"], "bpm": spec["bpm"], "durationSec": round(length, 2), "moods": spec["moods"]})
-        print("track", spec["id"], round(length, 1), "s")
     for name, fn in SFX.items():
-        write(out / "sfx" / f"{name}.wav", fn())
-        print("sfx", name)
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
+        if not only or name in only:
+            write(out / "sfx" / f"{name}.wav", fn())
+            print("sfx", name)
+    peaks = {}
+    for name, fn in TRANSITIONS.items():
+        x = fn()
+        env = np.abs(signal.hilbert(x)) if len(x) < SR * 3 else np.abs(x)
+        peaks[name] = round(float(np.argmax(lp(env, 30)) / SR), 3)
+        if not only or name in only:
+            write(out / "transitions" / f"{name}.wav", x)
+            print("transition", name, "peak", peaks[name])
+    (out / "manifest.json").write_text(json.dumps({"tracks": manifest, "transitionPeaks": peaks}, indent=2))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "public/audio")
+    args = sys.argv[1:]
+    main(args[0] if args else "public/audio", set(args[1].split(",")) if len(args) > 1 else None)

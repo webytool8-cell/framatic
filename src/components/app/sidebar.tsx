@@ -53,6 +53,10 @@ function SidebarBody({ projects, email }: { projects: SidebarProject[]; email: s
           <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".9" /><rect x="9" y="1.5" width="5.5" height="5.5" rx="2.75" fill="currentColor" opacity=".5" /><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".5" /><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".9" /></svg>
           All projects
         </NavLink>
+        <NavLink href="/music" active={path === "/music"}>
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><path d="M6 12.5V3.5l7-1.5v9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="4.5" cy="12.5" r="1.8" fill="currentColor" /><circle cx="11.5" cy="11" r="1.8" fill="currentColor" /></svg>
+          Music library
+        </NavLink>
         <NavLink href="/settings" active={path === "/settings"}>
           <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4"><circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
           Settings

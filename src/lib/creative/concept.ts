@@ -41,6 +41,8 @@ export const CreativePreferences = z.object({
   objective: CampaignObjective.optional(),
   /** Built-in music track chosen by the user ("none" = silent). */
   musicTrack: z.string().max(40).optional(),
+  /** Transition sound set chosen by the user ("off" = none). */
+  soundSet: z.string().max(40).optional(),
 });
 export type CreativePreferences = z.infer<typeof CreativePreferences>;
 

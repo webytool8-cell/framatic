@@ -15,26 +15,60 @@ export const DIMENSIONS: Record<ScenePlan["aspectRatio"], { width: number; heigh
 
 export interface TimelineScene {
   index: number;
+  /** First frame of this scene's sequence (start of its incoming transition). */
+  from: number;
   durationInFrames: number;
   /** Transition into the NEXT scene (0 = hard cut). */
   transitionFrames: number;
+  /** Frame of the cut to the next scene: the middle of the transition, on the beat. */
+  cutFrame: number;
 }
 
 export function msToFrames(ms: number, fps = FPS) {
   return Math.round((ms / 1000) * fps);
 }
 
+/** Transition length in seconds; with music it is half a beat or a full beat. */
+function transitionSeconds(ms: number, bpm: number | null): number {
+  const sec = (ms || 300) / 1000;
+  if (!bpm) return sec;
+  const beat = 60 / bpm;
+  return sec >= beat * 0.75 ? beat : beat / 2;
+}
+
+/**
+ * Lay scenes on the timeline so every cut lands exactly on the scene
+ * boundary (which snapToBeats puts on the music's beat grid). Boundaries are
+ * rounded independently, so there is no drift over the length of the ad.
+ * Transitions are centred on the cut.
+ */
 export function buildTimeline(plan: ScenePlan, fps = FPS): { scenes: TimelineScene[]; durationInFrames: number } {
-  const scenes = plan.scenes.map((s, index) => ({ index, durationInFrames: Math.max(1, Math.round(s.durationSec * fps)), transitionFrames: 0 }));
-  for (let i = 0; i < scenes.length - 1; i++) {
-    const t = plan.scenes[i].transition;
-    if (t.type === "cut") continue;
-    // A transition may not be longer than half of either neighbouring scene.
-    const max = Math.floor(Math.min(scenes[i].durationInFrames, scenes[i + 1].durationInFrames) / 2);
-    scenes[i].transitionFrames = Math.max(0, Math.min(msToFrames(t.durationMs || 300, fps), max));
+  const bpm = plan.music?.track && plan.music.track !== "none" ? plan.music.bpm : null;
+  const n = plan.scenes.length;
+  const boundaries: number[] = [];
+  let acc = 0;
+  for (const s of plan.scenes) {
+    acc += s.durationSec;
+    boundaries.push(Math.round(acc * fps));
   }
-  const total = scenes.reduce((n, s) => n + s.durationInFrames, 0) - scenes.reduce((n, s) => n + s.transitionFrames, 0);
-  return { scenes, durationInFrames: Math.max(1, total) };
+  const lengths = boundaries.map((b, i) => b - (i ? boundaries[i - 1] : 0));
+  const trans = plan.scenes.map((s, i) => {
+    if (i === n - 1 || s.transition.type === "cut") return 0;
+    const max = Math.floor(Math.min(lengths[i], lengths[i + 1]) / 2);
+    const t = Math.round(transitionSeconds(s.transition.durationMs, bpm) * fps);
+    return Math.max(0, Math.min(t, max));
+  });
+  const scenes: TimelineScene[] = [];
+  let from = 0;
+  for (let i = 0; i < n; i++) {
+    const cut = boundaries[i];
+    const half = Math.floor(trans[i] / 2);
+    const nextFrom = i < n - 1 ? cut - half : cut;
+    const durationInFrames = Math.max(1, nextFrom + trans[i] - from);
+    scenes.push({ index: i, from, durationInFrames, transitionFrames: trans[i], cutFrame: cut });
+    from = nextFrom;
+  }
+  return { scenes, durationInFrames: Math.max(1, boundaries[n - 1] ?? 1) };
 }
 
 /** Resolve a palette reference ("primary") or hex to a hex color. */
@@ -68,31 +102,15 @@ export function googleFontsHref(families: string[]): string | null {
   return `https://fonts.googleapis.com/css2?${clean.map((f) => `family=${encodeURIComponent(f).replace(/%20/g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
 }
 
-/**
- * Frame at which each scene is fully on screen (after the incoming
- * transition finishes), used for jumping to a scene.
- */
+/** Frame at which each scene is fully on screen (after its incoming transition), for jumping to a scene. */
 export function sceneStarts(plan: ScenePlan, fps = FPS): number[] {
   const { scenes } = buildTimeline(plan, fps);
-  const starts: number[] = [];
-  let t = 0;
-  scenes.forEach((s, i) => {
-    starts.push(t + (i > 0 ? scenes[i - 1].transitionFrames : 0));
-    t += s.durationInFrames - s.transitionFrames;
-  });
-  return starts;
+  return scenes.map((s, i) => s.from + (i > 0 ? scenes[i - 1].transitionFrames : 0));
 }
 
 /** Frame at which each scene's sequence begins (start of its incoming transition). */
 export function sequenceStarts(plan: ScenePlan, fps = FPS): number[] {
-  const { scenes } = buildTimeline(plan, fps);
-  const out: number[] = [];
-  let t = 0;
-  for (const s of scenes) {
-    out.push(t);
-    t += s.durationInFrames - s.transitionFrames;
-  }
-  return out;
+  return buildTimeline(plan, fps).scenes.map((s) => s.from);
 }
 
 /** Music volume envelope: short fade-in, ~1.2s fade-out at the end. */

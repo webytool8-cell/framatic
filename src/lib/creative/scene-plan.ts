@@ -127,6 +127,8 @@ export const ScenePlan = z.object({
     /** Built-in track id (src/video/music.ts) or "none" for silence. Chosen automatically if absent. */
     track: z.string().max(40).optional(),
     volume: z.number().min(0).max(1).default(0.7),
+    /** Transition sound set (src/video/music.ts SOUND_SETS) or "off". */
+    soundSet: z.string().max(40).optional(),
   }),
   scenes: z.array(Scene).min(3).max(14),
 });
@@ -140,12 +142,13 @@ export type ScenePlan = z.infer<typeof ScenePlan>;
  */
 export function normalizeScenePlan(plan: ScenePlan, fallbackCta?: string): ScenePlan {
   const seen = new Set<string>();
-  const frame = 1 / plan.fps;
   const scenes = plan.scenes.map((s, i) => {
     let id = s.id.replace(/[^a-z0-9_-]/gi, "_").slice(0, 40) || `scene_${i + 1}`;
     while (seen.has(id)) id = `${id}_${i + 1}`;
     seen.add(id);
-    const durationSec = Math.round(s.durationSec / frame) * frame;
+    // Keep beat-snapped lengths exact; the timeline rounds cut points to frames
+    // from the running total, so there is no drift.
+    const durationSec = +s.durationSec.toFixed(3);
     return {
       ...s,
       id,
@@ -180,9 +183,19 @@ export function snapToBeats(plan: ScenePlan, bpm: number): ScenePlan {
   const half = 30 / bpm; // seconds per half-beat
   const min = Math.ceil(0.6 / half) * half;
   const max = Math.floor(12 / half) * half;
+  const beatMs = 60000 / bpm;
+  const q = (ms: number, unit: number) => Math.round(ms / unit) * unit;
   const scenes = plan.scenes.map((s) => ({
     ...s,
     durationSec: +Math.min(max, Math.max(min, Math.round(s.durationSec / half) * half)).toFixed(3),
+    // Transitions last half a beat or a full beat.
+    transition: { ...s.transition, durationMs: s.transition.type === "cut" ? 0 : Math.round(s.transition.durationMs >= beatMs * 0.75 ? beatMs : beatMs / 2) },
+    // Text animations start and step on the beat subdivision.
+    animation: {
+      ...s.animation,
+      delayMs: Math.min(4000, Math.round(q(s.animation.delayMs, beatMs / 4))),
+      staggerMs: s.animation.staggerMs ? Math.min(600, Math.max(Math.round(beatMs / 8), Math.round(q(s.animation.staggerMs, beatMs / 8)))) : 0,
+    },
   }));
   return { ...plan, scenes, music: { ...plan.music, bpm: Math.round(bpm) } };
 }

@@ -8,8 +8,8 @@ import { clockWipe } from "@remotion/transitions/clock-wipe";
 import type { Scene, ScenePlan } from "@/lib/creative/scene-plan";
 import { AnimatedText } from "./motion";
 import { CtaButton, FeatureCallout, GeometricSweep, IconPop, LogoReveal, ProductWindow, ShapeBurst, StatCounter } from "./elements";
-import { buildTimeline, inkOn, musicVolume, resolveColor, sequenceStarts } from "./timeline";
-import { musicPath, sfxPath, trackById, SFX } from "./music";
+import { buildTimeline, inkOn, musicVolume, resolveColor } from "./timeline";
+import { DEFAULT_MUSIC_VOLUME, MUSIC_GAIN, SFX, musicPath, sfxPath, soundForTransition, trackById, transitionPath } from "./music";
 
 export interface AdVideoProps extends Record<string, unknown> {
   plan: ScenePlan;
@@ -174,41 +174,45 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
 }
 
 /* ---------- sound ---------- */
-const WHOOSH_TRANSITIONS = new Set(["wipe_left", "wipe_up", "whip_pan", "zoom_through", "circle_reveal", "shape_morph"]);
-const SFX_VOLUME: Record<string, number> = { whoosh: 0.45, riser: 0.4, hit: 0.6, beat_drop: 0.7, click: 0.5, swell: 0.45 };
+const SFX_VOLUME: Record<string, number> = { whoosh: 0.35, riser: 0.35, hit: 0.5, beat_drop: 0.55, click: 0.4, swell: 0.35 };
+const TRANSITION_VOLUME = 0.42;
 
 function Soundtrack({ plan }: { plan: ScenePlan }) {
   const { fps } = useVideoConfig();
   const timeline = buildTimeline(plan, fps);
-  const starts = sequenceStarts(plan, fps);
   const track = trackById(plan.music.track);
-  const base = plan.music.volume ?? 0.7;
-  const cues: Array<{ at: number; name: string }> = [];
+  const base = (plan.music.volume ?? DEFAULT_MUSIC_VOLUME) * MUSIC_GAIN;
+  const sounds: Array<{ at: number; src: string; volume: number }> = [];
+
   plan.scenes.forEach((scene, i) => {
-    for (const c of scene.audioCues) {
-      if ((SFX as readonly string[]).includes(c.cue)) cues.push({ at: starts[i] + Math.round(c.atSec * fps), name: c.cue });
-    }
-    // A soft whoosh under movement-based transitions.
     const t = timeline.scenes[i];
-    if (i < plan.scenes.length - 1 && t.transitionFrames > 0 && WHOOSH_TRANSITIONS.has(scene.transition.type)) {
-      cues.push({ at: starts[i + 1] - Math.round(fps * 0.2), name: "whoosh" });
+    // AI audio cues (hits, risers…), timed from the moment the scene is on screen.
+    const onScreen = i > 0 ? timeline.scenes[i - 1].cutFrame : 0;
+    for (const c of scene.audioCues) {
+      if ((SFX as readonly string[]).includes(c.cue)) sounds.push({ at: onScreen + Math.round(c.atSec * fps), src: sfxPath(c.cue), volume: SFX_VOLUME[c.cue] ?? 0.4 });
+    }
+    // Transition sound from this video's set (max two kinds), peaking exactly on the cut.
+    if (i < plan.scenes.length - 1 && t.transitionFrames > 0 && plan.music.soundSet !== "off") {
+      const snd = soundForTransition(plan.music.soundSet ?? "airy", scene.transition.type);
+      if (snd) sounds.push({ at: t.cutFrame - Math.round(snd.peakSec * fps), src: transitionPath(snd.id), volume: TRANSITION_VOLUME });
     }
   });
+
   return (
     <>
       {track && (
         <Audio
           src={staticFile(musicPath(track.id))}
-          trimBefore={Math.round((track.startAtSec ?? 0) * fps)}
-          loop={track.durationSec - (track.startAtSec ?? 0) < timeline.durationInFrames / fps}
+          trimBefore={Math.round(track.startAtSec * fps)}
+          loop={track.durationSec - track.startAtSec < timeline.durationInFrames / fps}
           volume={(f) => musicVolume(f, timeline.durationInFrames, base, fps)}
         />
       )}
-      {cues
-        .filter((c) => c.at >= 0 && c.at < timeline.durationInFrames)
+      {sounds
+        .filter((c) => c.at < timeline.durationInFrames)
         .map((c, i) => (
-          <Sequence key={`${c.name}-${i}`} from={c.at} layout="none">
-            <Audio src={staticFile(sfxPath(c.name))} volume={SFX_VOLUME[c.name] ?? 0.5} />
+          <Sequence key={`${c.src}-${i}`} from={Math.max(0, c.at)} layout="none">
+            <Audio src={staticFile(c.src)} volume={c.volume} />
           </Sequence>
         ))}
     </>

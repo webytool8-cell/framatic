@@ -11,6 +11,7 @@ import { WorkflowTabs } from "@/components/app/workflow-tabs";
 import { BrandStrip } from "@/components/app/brand-summary";
 import { JobRunner } from "@/components/app/job-runner";
 import { Composer } from "@/components/app/composer";
+import { MusicLibrary } from "@/components/app/music-library";
 import { AIBrandAnalysis, assembleProfile } from "@/lib/brand/intelligence";
 import { AIConcept, CONCEPT_KINDS, CreativePreferences } from "@/lib/creative/concept";
 import { finalizeConcept } from "@/lib/creative/director";
@@ -55,6 +56,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
       <Sidebar email="preview@framatic.dev" projects={[{ id: "demo", name: "Tidyflow launch", status: "concepts_ready", color: "#14B88A" }, { id: "b", name: "Brightmug store", status: "generating", color: "#FF6B6B" }, { id: "c", name: "Agency pitch", status: "analysis_failed", color: null }]} />
       <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6"><div className="mx-auto max-w-[1400px]">
         
+        {view === "music" && <div className="max-w-5xl space-y-5"><h1 className="text-heading text-2xl">Music library</h1><MusicLibrary /></div>}
         {view === "running" && <div className="mx-auto max-w-2xl"><JobRunner projectId="demo" kind="autopilot" status="analyzing" message="Reading your website…" label="" /></div>}
         {view === "dashboard" && (
           <div className="space-y-5">
@@ -67,7 +69,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
             ]} />
           </div>
         )}
-        {view !== "dashboard" && view !== "running" && (
+        {view !== "dashboard" && view !== "running" && view !== "music" && (
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
             <div><p className="mb-0.5 text-xs text-slate">Projects /</p><div className="flex items-center gap-2.5"><h1 className="text-heading text-2xl">Tidyflow launch</h1><StatusPill status="concepts_ready" /><span className="font-mono text-xs text-slate">tidyflow.example ↗</span></div></div>
             <WorkflowTabs projectId="demo" hasBrand />

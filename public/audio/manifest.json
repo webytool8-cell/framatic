@@ -1,94 +1,209 @@
-[
-  {
-    "id": "bright-pop",
-    "title": "Bright Pop",
-    "bpm": 120,
-    "durationSec": 56.0,
-    "moods": [
-      "upbeat",
-      "energetic",
-      "happy",
-      "pop",
-      "bright",
-      "positive",
-      "fun",
-      "optimistic",
-      "punchy"
-    ]
-  },
-  {
-    "id": "lofi-chill",
-    "title": "Lo-fi Chill",
-    "bpm": 86,
-    "durationSec": 69.77,
-    "moods": [
-      "lofi",
-      "lo-fi",
-      "chill",
-      "calm",
-      "relaxed",
-      "warm",
-      "mellow",
-      "soft",
-      "cozy",
-      "laid-back",
-      "gentle"
-    ]
-  },
-  {
-    "id": "tech-pulse",
-    "title": "Tech Pulse",
-    "bpm": 124,
-    "durationSec": 54.19,
-    "moods": [
-      "tech",
-      "modern",
-      "driving",
-      "confident",
-      "corporate",
-      "product",
-      "sleek",
-      "innovative",
-      "professional",
-      "saas",
-      "electronic",
-      "futuristic"
-    ]
-  },
-  {
-    "id": "cinematic-rise",
-    "title": "Cinematic Rise",
-    "bpm": 96,
-    "durationSec": 50.0,
-    "moods": [
-      "cinematic",
-      "epic",
-      "inspiring",
-      "bold",
-      "manifesto",
-      "emotional",
-      "dramatic",
-      "uplifting",
-      "anthemic",
-      "grand",
-      "heroic"
-    ]
-  },
-  {
-    "id": "playful-bounce",
-    "title": "Playful Bounce",
-    "bpm": 108,
-    "durationSec": 62.22,
-    "moods": [
-      "playful",
-      "quirky",
-      "bouncy",
-      "cheeky",
-      "friendly",
-      "light",
-      "whimsical",
-      "cute",
-      "lighthearted"
-    ]
+{
+  "tracks": [
+    {
+      "id": "bright-pop",
+      "title": "Bright Pop",
+      "bpm": 120,
+      "durationSec": 56.0,
+      "moods": [
+        "upbeat",
+        "energetic",
+        "happy",
+        "pop",
+        "bright",
+        "positive",
+        "fun",
+        "optimistic",
+        "punchy"
+      ]
+    },
+    {
+      "id": "lofi-chill",
+      "title": "Lo-fi Chill",
+      "bpm": 86,
+      "durationSec": 69.77,
+      "moods": [
+        "lofi",
+        "lo-fi",
+        "chill",
+        "calm",
+        "relaxed",
+        "warm",
+        "mellow",
+        "soft",
+        "cozy",
+        "laid-back",
+        "gentle"
+      ]
+    },
+    {
+      "id": "tech-pulse",
+      "title": "Tech Pulse",
+      "bpm": 124,
+      "durationSec": 54.19,
+      "moods": [
+        "tech",
+        "modern",
+        "driving",
+        "confident",
+        "corporate",
+        "product",
+        "sleek",
+        "innovative",
+        "professional",
+        "saas",
+        "electronic",
+        "futuristic"
+      ]
+    },
+    {
+      "id": "cinematic-rise",
+      "title": "Cinematic Rise",
+      "bpm": 96,
+      "durationSec": 50.0,
+      "moods": [
+        "cinematic",
+        "epic",
+        "inspiring",
+        "bold",
+        "manifesto",
+        "emotional",
+        "dramatic",
+        "uplifting",
+        "anthemic",
+        "grand",
+        "heroic"
+      ]
+    },
+    {
+      "id": "playful-bounce",
+      "title": "Playful Bounce",
+      "bpm": 108,
+      "durationSec": 62.22,
+      "moods": [
+        "playful",
+        "quirky",
+        "bouncy",
+        "cheeky",
+        "friendly",
+        "light",
+        "whimsical",
+        "cute",
+        "lighthearted"
+      ]
+    },
+    {
+      "id": "acoustic-sunrise",
+      "title": "Acoustic Sunrise",
+      "bpm": 104,
+      "durationSec": 64.62,
+      "moods": [
+        "acoustic",
+        "organic",
+        "warm",
+        "friendly",
+        "natural",
+        "honest",
+        "sunny",
+        "community",
+        "wholesome",
+        "folk",
+        "handmade"
+      ]
+    },
+    {
+      "id": "deep-house",
+      "title": "Deep House",
+      "bpm": 122,
+      "durationSec": 55.08,
+      "moods": [
+        "stylish",
+        "fashion",
+        "sleek",
+        "luxury",
+        "ecommerce",
+        "shopping",
+        "lifestyle",
+        "chic",
+        "smooth",
+        "cool",
+        "elegant",
+        "premium",
+        "night"
+      ]
+    },
+    {
+      "id": "boom-bap",
+      "title": "Boom Bap",
+      "bpm": 90,
+      "durationSec": 66.67,
+      "moods": [
+        "hip-hop",
+        "hiphop",
+        "urban",
+        "streetwear",
+        "street",
+        "gritty",
+        "swagger",
+        "bold",
+        "edgy",
+        "creator",
+        "rap",
+        "groovy"
+      ]
+    },
+    {
+      "id": "synthwave",
+      "title": "Synthwave",
+      "bpm": 100,
+      "durationSec": 67.2,
+      "moods": [
+        "retro",
+        "80s",
+        "nostalgic",
+        "neon",
+        "synthwave",
+        "gaming",
+        "night",
+        "vintage",
+        "dreamy",
+        "futuristic"
+      ]
+    },
+    {
+      "id": "soft-piano",
+      "title": "Soft Piano",
+      "bpm": 74,
+      "durationSec": 71.35,
+      "moods": [
+        "emotional",
+        "heartfelt",
+        "elegant",
+        "minimal",
+        "calm",
+        "thoughtful",
+        "gentle",
+        "sincere",
+        "healthcare",
+        "wellness",
+        "story",
+        "tender",
+        "reflective"
+      ]
+    }
+  ],
+  "transitionPeaks": {
+    "whoosh-air": 0.447,
+    "whoosh-fast": 0.185,
+    "swish": 0.213,
+    "swipe-up": 0.5,
+    "pop": 0.017,
+    "snap": 0.013,
+    "blip": 0.02,
+    "glitch": 0.075,
+    "shimmer": 0.202,
+    "thump": 0.021,
+    "reverse-swell": 1.1,
+    "tape-stop": 0.022
   }
-]
+}

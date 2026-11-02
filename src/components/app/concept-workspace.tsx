@@ -215,8 +215,9 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                 <MusicPicker
                   track={concept.plan.music.track}
                   volume={concept.plan.music.volume ?? 0.7}
+                  soundSet={concept.plan.music.soundSet}
                   disabled={!!busy || anyDirty}
-                  onChange={(t, v) => run("music", () => updateMusic(concept.id, t, v))}
+                  onChange={(t, v, set) => run("music", () => updateMusic(concept.id, t, v, set))}
                 />
               </div>
               {scenesDirty && <p className="mt-2 text-xs text-slate">Showing your unsaved edits. Save them before changing music.</p>}

@@ -3,17 +3,37 @@ import { AIConcept, CreativePreferences } from "@/lib/creative/concept";
 import { finalizeConcept } from "@/lib/creative/director";
 import { blankBrandProfile } from "@/lib/brand/schema";
 import { buildTimeline, googleFontsHref, inkOn, parseStat, resolveColor, sceneStarts } from "@/video/timeline";
+import { snapToBeats } from "@/lib/creative/scene-plan";
 import { aiConceptFixture } from "./helpers";
 
 const plan = finalizeConcept(AIConcept.parse(aiConceptFixture()), blankBrandProfile("X"), CreativePreferences.parse({})).scenePlan;
 
 describe("video timeline", () => {
-  it("converts scenes to frames and overlaps transitions", () => {
+  it("puts every cut on the beat and centres transitions on it", () => {
+    // Fixture concept gets Bright Pop (120 bpm): beat = 15 frames, scenes snapped to 4.0s.
+    expect(plan.music.track).toBe("bright-pop");
     const t = buildTimeline(plan, 30);
-    expect(t.scenes.map((s) => s.durationInFrames)).toEqual([120, 120, 120, 120]);
-    // 3 wipe transitions of 300ms = 9 frames each; the last scene has none
-    expect(t.scenes.map((s) => s.transitionFrames)).toEqual([9, 9, 9, 0]);
-    expect(t.durationInFrames).toBe(480 - 27);
+    expect(t.scenes.map((s) => s.cutFrame)).toEqual([120, 240, 360, 480]);
+    expect(t.scenes.every((s) => s.cutFrame % 15 === 0)).toBe(true);
+    // wipes are snapped to half a beat (250ms = 8 frames)
+    expect(t.scenes.map((s) => s.transitionFrames)).toEqual([8, 8, 8, 0]);
+    for (let i = 0; i < 3; i++) {
+      const mid = t.scenes[i + 1].from + t.scenes[i].transitionFrames / 2;
+      expect(Math.abs(mid - t.scenes[i].cutFrame)).toBeLessThanOrEqual(0.5);
+      // sequences chain the way TransitionSeries lays them out
+      expect(t.scenes[i].from + t.scenes[i].durationInFrames - t.scenes[i].transitionFrames).toBe(t.scenes[i + 1].from);
+    }
+    expect(t.durationInFrames).toBe(480);
+  });
+
+  it("does not drift at tempos that don't divide evenly into frames", () => {
+    const p = snapToBeats({ ...plan, music: { ...plan.music, track: "lofi-chill" }, scenes: [...plan.scenes, ...plan.scenes].map((s, i) => ({ ...s, id: `s${i}`, durationSec: 2.1 })) }, 86);
+    const beatFrames = (60 / 86) * 30;
+    const t = buildTimeline(p, 30);
+    for (const s of t.scenes) {
+      const beats = s.cutFrame / beatFrames;
+      expect(Math.abs(beats * 2 - Math.round(beats * 2)) * (beatFrames / 2)).toBeLessThanOrEqual(0.5); // within half a frame of the half-beat grid
+    }
   });
 
   it("treats cuts as zero-length and clamps long transitions", () => {
@@ -23,11 +43,11 @@ describe("video timeline", () => {
     p.scenes[2].durationSec = 1;
     const t = buildTimeline(p, 30);
     expect(t.scenes[0].transitionFrames).toBe(0);
-    expect(t.scenes[1].transitionFrames).toBe(15); // half of the 1s neighbour
+    expect(t.scenes[1].transitionFrames).toBe(15); // one beat, also half of the 1s neighbour
   });
 
   it("jumps to the point each scene is fully visible", () => {
-    expect(sceneStarts(plan, 30)).toEqual([0, 120, 231, 342]);
+    expect(sceneStarts(plan, 30)).toEqual([0, 124, 244, 364]);
   });
 
   it("resolves colors and contrast", () => {

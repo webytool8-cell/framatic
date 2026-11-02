@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { ConceptContent, CreativePreferences, EDITABLE_FIELDS } from "@/lib/creative/concept";
 import { Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
-import { trackById } from "@/video/music";
+import { SOUND_SETS, trackById } from "@/video/music";
 import { getConcept, saveConceptVersion } from "@/lib/db/repo";
 import type { FormState } from "./auth";
 
@@ -101,20 +101,22 @@ export async function restoreSceneVersion(conceptId: string, version: number): P
   return { message: `Restored version ${version} as a new version` };
 }
 
-/** Change the soundtrack: a built-in track (scenes re-cut on its beat) or "none". */
-export async function updateMusic(conceptId: string, trackId: string, volume: number): Promise<FormState> {
+/** Change the soundtrack (scenes re-cut on the track's beat), its volume and the transition sound set. */
+export async function updateMusic(conceptId: string, trackId: string, volume: number, soundSet?: string): Promise<FormState> {
   const { supabase, user } = await requireUser();
   const concept = await getConcept(supabase, user.id, conceptId);
   if (!concept?.scenePlan) return { error: "Concept not found." };
   const track = trackId === "none" ? null : trackById(trackId);
   if (trackId !== "none" && !track) return { error: "That track isn't available." };
+  if (soundSet && soundSet !== "off" && !SOUND_SETS.some((s) => s.id === soundSet)) return { error: "That sound set isn't available." };
   const vol = Math.max(0, Math.min(1, Number.isFinite(volume) ? volume : 0.7));
-  const base = { ...concept.scenePlan, music: { ...concept.scenePlan.music, track: track ? track.id : "none", volume: vol } };
+  const set = soundSet ?? concept.preferences.soundSet ?? concept.scenePlan.music.soundSet ?? track?.soundSet ?? "airy";
+  const base = { ...concept.scenePlan, music: { ...concept.scenePlan.music, track: track ? track.id : "none", volume: vol, soundSet: set } };
   const plan = ScenePlan.safeParse(normalizeScenePlan(track ? snapToBeats(base, track.bpm) : base, concept.content.cta));
   if (!plan.success) return { error: "Couldn't apply that track to this concept." };
   await supabase
     .from("creative_concepts")
-    .update({ preferences: { ...concept.preferences, musicTrack: track ? track.id : "none" } })
+    .update({ preferences: { ...concept.preferences, musicTrack: track ? track.id : "none", ...(soundSet ? { soundSet } : {}) } })
     .eq("id", conceptId)
     .eq("user_id", user.id);
   await saveConceptVersion(supabase, user.id, { ...concept }, {
