@@ -69,7 +69,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   // 4. Results
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {brand && <BrandStrip projectId={id} profile={brand.profile} />}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -84,7 +84,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <ul className="list-disc space-y-1 pl-4">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
         </Alert>
       )}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {concepts.map((c) => (
           <ConceptCard
             key={c.id}

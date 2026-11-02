@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-dvh bg-[#FAFAFC]">
       <Sidebar projects={projects} email={user.email ?? null} />
-      <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6">
+      <main className="px-4 pb-24 pt-8 sm:px-8 lg:ml-60 lg:px-12 lg:pt-10">
         <div className="mx-auto max-w-[1400px]">{children}</div>
       </main>
     </div>

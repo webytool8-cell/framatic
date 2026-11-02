@@ -28,7 +28,7 @@ export function ConceptCard({
   return (
     <article
       style={{ ["--ring" as string]: `var(--color-${meta.accent})` }}
-      className={cn("lift group relative flex flex-col rounded-xl border-[1.5px] bg-white p-4", preferred ? cn(accentBorder[meta.accent], "selected-ring") : "border-line hover:border-ink")}
+      className={cn("lift group relative flex flex-col rounded-2xl border-[1.5px] bg-white p-5", preferred ? cn(accentBorder[meta.accent], "selected-ring") : "border-line hover:border-ink")}
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="flex items-center gap-2">

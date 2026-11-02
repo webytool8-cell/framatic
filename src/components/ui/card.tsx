@@ -66,7 +66,7 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <Card accent={accent} className={cn("p-5", className)}>
+    <Card accent={accent} className={cn("p-6", className)}>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           {eyebrow && <p className="label-tech mb-0.5">{eyebrow}</p>}

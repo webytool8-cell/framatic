@@ -48,7 +48,7 @@ export function BrandStrip({ projectId, profile }: { projectId: string; profile:
   const colors = [profile.identity.primaryColor, ...profile.identity.secondaryColors, ...profile.identity.accentColors].slice(0, 5);
   const features = [...profile.product.features].sort((a, b) => Number(b.emphasized) - Number(a.emphasized)).slice(0, 3);
   return (
-    <section aria-label="Brand" className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border border-line bg-white px-4 py-3 text-sm">
+    <section aria-label="Brand" className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-[linear-gradient(135deg,#E6F9ED_0%,#E7F8FD_100%)] px-5 py-4 text-sm ring-1 ring-black/5">
       <div className="flex min-w-0 items-center gap-2.5">
         {profile.identity.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -5,91 +5,120 @@ import { ScenePreview } from "@/components/app/scene-preview";
 import { Logo } from "@/components/ui/shapes";
 import { Tag } from "@/components/ui/status";
 import { samplePlan, sampleVerticalPlan } from "@/lib/samples";
+import { MusicTeaser } from "@/components/landing/music-teaser";
 
 function Tile({ title, body, children, className = "", soon = false }: { title: string; body: string; children: React.ReactNode; className?: string; soon?: boolean }) {
   return (
-    <article className={`flex flex-col rounded-xl border border-line bg-white p-4 ${soon ? "border-dashed" : ""} ${className}`}>
-      <div className="mb-3 min-h-0 flex-1">{children}</div>
+    <article className={`flex flex-col rounded-2xl bg-white p-5 shadow-[0_18px_36px_-28px_rgba(32,33,36,0.4)] ring-1 ring-black/5 ${soon ? "ring-dashed" : ""} ${className}`}>
+      <div className="mb-4 min-h-0 flex-1">{children}</div>
       <h3 className="flex items-center gap-2 font-semibold">{title}{soon && <span className="rounded bg-butter px-1.5 py-0.5 text-[10px] font-semibold text-yellow-deep">Coming soon</span>}</h3>
       <p className="text-sm text-slate">{body}</p>
     </article>
   );
 }
 
+/** A full-width band with its own colour, so sections are clearly separated. */
+function Band({ id, tone, children, className = "" }: { id?: string; tone: "hero" | "violet" | "warm" | "fresh" | "night"; children: React.ReactNode; className?: string }) {
+  const tones = {
+    hero: "bg-[radial-gradient(1200px_600px_at_0%_0%,#F0EBFF_0%,transparent_60%),radial-gradient(900px_500px_at_100%_20%,#E7F8FD_0%,transparent_55%),linear-gradient(180deg,#FFFFFF_0%,#FFFFFF_100%)]",
+    violet: "bg-[linear-gradient(135deg,#7957FF_0%,#5A3AE6_55%,#4326C2_100%)] text-white",
+    warm: "bg-[linear-gradient(180deg,#FFF0E8_0%,#FFF8E1_100%)]",
+    fresh: "bg-[linear-gradient(160deg,#E6F9ED_0%,#E7F8FD_100%)]",
+    night: "bg-[radial-gradient(800px_400px_at_85%_0%,rgba(121,87,255,0.55)_0%,transparent_60%),linear-gradient(180deg,#1B1A24_0%,#202124_100%)] text-white",
+  } as const;
+  return (
+    <section id={id} className={`relative scroll-mt-16 ${tones[tone]} ${className}`}>
+      <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 md:py-32">{children}</div>
+    </section>
+  );
+}
+
+function SectionHead({ kicker, title, body, light = false }: { kicker: string; title: string; body?: string; light?: boolean }) {
+  return (
+    <div className="mb-14 max-w-2xl">
+      <p className={`mb-3 text-sm font-semibold ${light ? "text-lime" : "text-violet-deep"}`}>{kicker}</p>
+      <h2 className="text-display text-[clamp(2.2rem,4.6vw,3.6rem)]">{title}</h2>
+      {body && <p className={`mt-4 text-lg leading-relaxed ${light ? "text-white/80" : "text-slate"}`}>{body}</p>}
+    </div>
+  );
+}
+
 export default function Landing() {
   return (
-    <div className="min-h-dvh overflow-x-clip bg-[#FAFAFC]">
-      <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1280px] items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-6">
+    <div className="min-h-dvh overflow-x-clip bg-white">
+      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/85 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-5 sm:px-8">
+          <div className="flex items-center gap-8">
             <Logo />
             <nav className="hidden items-center gap-1 text-sm text-slate md:flex">
-              <a href="#features" className="rounded-md px-2.5 py-1.5 hover:bg-lavender hover:text-ink">Features</a>
-              <a href="#how" className="rounded-md px-2.5 py-1.5 hover:bg-lavender hover:text-ink">How it works</a>
+              <a href="#how" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">How it works</a>
+              <a href="#features" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Features</a>
+              <a href="#sound" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Music</a>
             </nav>
           </div>
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Link href="/login" className="rounded-md px-3 py-1.5 hover:bg-lavender">Sign in</Link>
-            <Link href="/signup" className="rounded-md bg-ink px-3 py-1.5 text-white hover:bg-black">Create account</Link>
+            <Link href="/login" className="rounded-lg px-3 py-2 hover:bg-lavender">Sign in</Link>
+            <Link href="/signup" className="rounded-lg bg-ink px-4 py-2 text-white hover:bg-black">Create account</Link>
           </div>
         </div>
       </header>
 
-      {/* Hero: input + live example */}
-      <section id="start" className="mx-auto grid max-w-[1280px] scroll-mt-20 items-center gap-8 px-4 pb-14 pt-10 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-10 lg:pt-14">
-        <div>
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-lime-deep" />
-            AI creative director for video ads
-          </p>
-          <h1 className="text-display text-[clamp(2.4rem,4.4vw,3.6rem)]">
-            Your website.
-            <br />
-            A whole new{" "}
-            <span className="relative inline-block whitespace-nowrap">
-              motion.
-              <span aria-hidden className="absolute -bottom-[0.05em] left-[0.04em] h-[0.1em] w-[calc(100%-0.4em)] origin-left animate-[grow_700ms_var(--ease-snap)_400ms_both] rounded-full bg-coral" />
-            </span>
-          </h1>
-          <p className="mt-4 max-w-lg text-[17px] leading-relaxed text-slate">
-            Paste a link. Framatic reads your brand and product, then writes three video ad concepts with scene-by-scene storyboards you can edit in plain words.
-          </p>
-          <div className="mt-6">
-            <Composer />
+      {/* 1 · Hero */}
+      <Band id="start" tone="hero">
+        <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <div>
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium shadow-sm ring-1 ring-black/5">
+              <span className="h-2 w-2 rounded-full bg-lime-deep" />
+              AI creative director for video ads
+            </p>
+            <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">
+              Your website.
+              <br />
+              A whole new{" "}
+              <span className="relative inline-block whitespace-nowrap">
+                motion.
+                <span aria-hidden className="absolute -bottom-[0.05em] left-[0.04em] h-[0.1em] w-[calc(100%-0.4em)] origin-left animate-[grow_700ms_var(--ease-snap)_400ms_both] rounded-full bg-coral" />
+              </span>
+            </h1>
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate">
+              Paste a link. Framatic reads your brand and product, then writes three video ad concepts you can watch, tweak in plain words and export.
+            </p>
+            <div className="mt-10">
+              <Composer />
+            </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate">
+              {["About a minute", "3 concepts per site", "16:9, 9:16 and 1:1"].map((t) => (
+                <li key={t} className="flex items-center gap-1.5"><span aria-hidden className="text-lime-deep">✓</span>{t}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-slate">
-            {["About a minute", "3 concepts per site", "Every format: 16:9, 9:16, 1:1"].map((t) => (
-              <li key={t} className="flex items-center gap-1.5"><span aria-hidden className="text-lime-deep">✓</span>{t}</li>
-            ))}
-          </ul>
+          <WorkspacePreview plan={samplePlan} />
         </div>
-        <WorkspacePreview plan={samplePlan} />
-      </section>
+      </Band>
 
-      {/* How it works — a real sequence */}
-      <section id="how" className="border-y border-line bg-white">
-        <ol className="mx-auto grid max-w-[1280px] divide-y divide-line px-4 sm:px-6 md:grid-cols-4 md:divide-x md:divide-y-0">
+      {/* 2 · How it works */}
+      <Band id="how" tone="violet">
+        <SectionHead light kicker="How it works" title="One link in. Three ads out." body="You bring the website. The AI does the reading, the writing and the storyboarding." />
+        <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Paste a link", "Add a goal or pick a starting idea if you like.", "bg-cyan"],
-            ["Sign in", "So we can save your brand and your concepts.", "bg-violet"],
-            ["Get 3 concepts", "Brand read, scripts and storyboards in about a minute.", "bg-coral"],
-            ["Tweak & pick", "Edit any line or ask for changes in plain words.", "bg-lime"],
+            ["Paste a link", "Add a goal or pick a starting idea if you like.", "bg-cyan text-ink"],
+            ["Sign in", "So we can save your brand, concepts and videos.", "bg-yellow text-ink"],
+            ["Get 3 concepts", "Brand read, scripts, storyboards and music in about a minute.", "bg-coral text-white"],
+            ["Tweak & export", "Edit any line or ask for changes, then download the MP4.", "bg-lime text-ink"],
           ].map(([t, b, c], i) => (
-            <li key={t} className="flex gap-3 py-5 md:px-5 md:first:pl-0">
-              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${c} ${c === "bg-violet" || c === "bg-coral" ? "text-white" : "text-ink"}`}>{i + 1}</span>
-              <div><p className="font-semibold">{t}</p><p className="text-sm text-slate">{b}</p></div>
+            <li key={t} className="rounded-2xl bg-white/10 p-6 ring-1 ring-white/20 backdrop-blur">
+              <span className={`mb-8 grid h-10 w-10 place-items-center rounded-full text-sm font-bold ${c}`}>{i + 1}</span>
+              <p className="text-heading text-xl">{t}</p>
+              <p className="mt-2 text-white/75">{b}</p>
             </li>
           ))}
         </ol>
-      </section>
+      </Band>
 
-      {/* Features as working UI */}
-      <section id="features" className="mx-auto max-w-[1280px] scroll-mt-20 px-4 py-14 sm:px-6">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-heading text-3xl">Everything happens in one workspace</h2>
-          <p className="max-w-md text-sm text-slate">Examples below use a fictional brand.</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 3 · Features */}
+      <Band id="features" tone="warm">
+        <SectionHead kicker="Features" title="Everything happens in one workspace" body="From reading your site to a finished, on-beat video. Examples use a fictional brand." />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <Tile title="Reads your site" body="Homepage, features, pricing and about pages. Colors, fonts and logo come straight from your CSS.">
             <ul className="space-y-1.5 font-mono text-xs">
               {["/", "/features", "/pricing", "/about"].map((p, i) => (
@@ -193,21 +222,28 @@ export default function Landing() {
             </ul>
           </Tile>
         </div>
-      </section>
+      </Band>
 
-      {/* Closing */}
-      <section className="mx-auto max-w-[1280px] px-4 pb-14 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-violet px-6 py-6 text-white sm:px-8">
-          <div>
-            <h2 className="text-heading text-2xl">What would your ad say?</h2>
-            <p className="text-white/85">Find out in about a minute. All it takes is your website.</p>
+      {/* 4 · Sound */}
+      <Band id="sound" tone="fresh">
+        <SectionHead kicker="Music & sound" title="Sounds as good as it looks" body="Every concept gets a track that fits its mood. Cuts and transitions land on the beat, and the music sits underneath your message. Press play." />
+        <MusicTeaser />
+      </Band>
+
+      {/* 5 · Closing */}
+      <Band tone="night">
+        <div className="flex flex-col items-start gap-8 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <p className="mb-3 text-sm font-semibold text-lime">Ready when you are</p>
+            <h2 className="text-display text-[clamp(2.4rem,5vw,4rem)]">What would your ad say?</h2>
+            <p className="mt-4 text-lg text-white/75">Find out in about a minute. All it takes is your website.</p>
           </div>
-          <a href="#start" className="rounded-lg bg-white px-4 py-2.5 font-semibold text-ink hover:bg-lavender">Paste your website</a>
+          <a href="#start" className="rounded-xl bg-lime px-6 py-4 text-lg font-semibold text-ink transition-transform hover:-translate-y-0.5">Paste your website</a>
         </div>
-      </section>
+      </Band>
 
-      <footer className="border-t border-line bg-white">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-slate sm:px-6">
+      <footer className="bg-white">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-10 text-sm text-slate sm:px-8">
           <Logo mono />
           <p>© {new Date().getFullYear()} Framatic</p>
         </div>

@@ -33,7 +33,7 @@ function Row({ p }: { p: ProjectListItem }) {
   const [pending, start] = useTransition();
   const host = p.website_url ? new URL(p.website_url).hostname.replace(/^www\./, "") : "No website";
   return (
-    <li className="group relative grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors hover:bg-[#FAFAFC] md:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.4fr)_170px_90px_110px_auto]">
+    <li className="group relative grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-1 px-5 py-4 transition-colors hover:bg-[#FAFAFC] md:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.4fr)_170px_90px_110px_auto]">
       <span aria-hidden className="flex h-9 w-9 overflow-hidden rounded-lg border border-black/5">
         {(p.palette.length ? p.palette : ["#F0EBFF"]).slice(0, 3).map((c, i) => <span key={i} className="flex-1" style={{ background: c }} />)}
       </span>
@@ -74,8 +74,8 @@ export function ProjectTable({ projects }: { projects: ProjectListItem[] }) {
   const [q, setQ] = useState("");
   const shown = projects.filter((p) => `${p.name} ${p.website_url ?? ""}`.toLowerCase().includes(q.toLowerCase()));
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-white">
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+    <section className="overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
         <h2 className="text-sm font-semibold">Projects <span className="ml-1 font-normal text-slate">{projects.length}</span></h2>
         <label className="relative">
           <span className="sr-only">Search projects</span>

@@ -11,7 +11,7 @@ export default async function Settings() {
   const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
   const viaGoogle = user.app_metadata?.provider === "google";
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="max-w-3xl space-y-8">
       <div>
         <h1 className="text-heading text-2xl">Settings</h1>
         <p className="text-sm text-slate">Creative defaults for new ads, and your account.</p>

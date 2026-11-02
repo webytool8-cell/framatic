@@ -178,7 +178,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
   return (
     <div className="pb-24">
       {/* Header */}
-      <div className={cn("mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border-[1.5px] bg-white p-4", accentBorder[meta.accent])}>
+      <div className={cn("mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border-[1.5px] bg-white p-6", accentBorder[meta.accent])}>
         <div className="min-w-0">
           <p className="text-sm text-slate">Concept {meta.slot} · {meta.label}</p>
           <h2 className="text-heading truncate text-2xl">{content.title}</h2>
@@ -192,7 +192,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
 
       {notice && <Alert tone={notice.tone} className="mb-6">{notice.text}</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Preview + storyboard */}
         <section aria-labelledby="sb-title">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -254,7 +254,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
         </section>
 
         {/* Right rail: ask + key copy */}
-        <div className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <ExportPanel conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
           {aiReady && (
             <section className="rounded-[var(--radius-card)] border-2 border-ink bg-white p-4 shadow-[5px_5px_0_0_#7957FF]" aria-labelledby="ask-title">
