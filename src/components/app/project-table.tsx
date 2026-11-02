@@ -84,10 +84,10 @@ export function ProjectTable({ projects }: { projects: ProjectListItem[] }) {
         </label>
       </div>
       <div className="hidden grid-cols-[auto_minmax(0,2fr)_minmax(0,1.4fr)_170px_90px_110px_auto] gap-x-4 border-b border-line bg-[#FAFAFC] px-4 py-2 text-xs font-medium text-slate md:grid">
-        <span className="w-9" /><span>Name</span><span>Website</span><span>Status</span><span>Output</span><span>Updated</span><span className="w-[7.5rem]" />
+        <span className="w-9" /><span>Name</span><span>Link</span><span>Status</span><span>Output</span><span>Updated</span><span className="w-[7.5rem]" />
       </div>
       {shown.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-slate">{projects.length ? "No projects match that search." : "No projects yet. Paste a website above to make your first ad."}</p>
+        <p className="px-4 py-8 text-center text-sm text-slate">{projects.length ? "No projects match that search." : "No projects yet. Paste a store or product link above to make your first ad."}</p>
       ) : (
         <ul className="divide-y divide-line">{shown.map((p) => <Row key={p.id} p={p} />)}</ul>
       )}

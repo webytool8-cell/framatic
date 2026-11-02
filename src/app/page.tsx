@@ -69,10 +69,10 @@ export default function Landing() {
           <div>
             <p className="mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium shadow-sm ring-1 ring-black/5">
               <span className="h-2 w-2 rounded-full bg-lime-deep" />
-              AI creative director for video ads
+              AI video ads for online stores and digital products
             </p>
             <h1 className="text-display text-[clamp(2.6rem,5vw,4.2rem)]">
-              Your website.
+              Your product.
               <br />
               A whole new{" "}
               <span className="relative inline-block whitespace-nowrap">
@@ -81,13 +81,13 @@ export default function Landing() {
               </span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate">
-              Paste a link. Framatic reads your brand and product, then writes three video ad concepts you can watch, tweak in plain words and export.
+              Paste a link to your store, a product page or your app. Framatic turns what you sell into three scroll-stopping video ads: scripted, storyboarded, set to music and ready to post.
             </p>
             <div className="mt-10">
               <Composer />
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate">
-              {["About a minute", "3 concepts per site", "16:9, 9:16 and 1:1"].map((t) => (
+              {["Ads in about a minute", "Built for Reels, TikTok & YouTube", "Shopify, SaaS, apps & courses"].map((t) => (
                 <li key={t} className="flex items-center gap-1.5"><span aria-hidden className="text-lime-deep">✓</span>{t}</li>
               ))}
             </ul>
@@ -98,13 +98,13 @@ export default function Landing() {
 
       {/* 2 · How it works */}
       <Band id="how" tone="violet">
-        <SectionHead light kicker="How it works" title="One link in. Three ads out." body="You bring the website. The AI does the reading, the writing and the storyboarding." />
+        <SectionHead light kicker="How it works" title="One product link in. Three ads out." body="You bring what you sell. The AI does the reading, the copywriting and the storyboarding." />
         <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Paste a link", "Add a goal or pick a starting idea if you like.", "bg-cyan text-ink"],
-            ["Sign in", "So we can save your brand, concepts and videos.", "bg-yellow text-ink"],
-            ["Get 3 concepts", "Brand read, scripts, storyboards and music in about a minute.", "bg-coral text-white"],
-            ["Tweak & export", "Edit any line or ask for changes, then download the MP4.", "bg-lime text-ink"],
+            ["Paste a product link", "A store, a product page or your app. Add an offer or goal if you have one.", "bg-cyan text-ink"],
+            ["Sign in", "So we can save your brand, products, concepts and videos.", "bg-yellow text-ink"],
+            ["Get 3 ad concepts", "Hooks, scripts, storyboards and music in about a minute.", "bg-coral text-white"],
+            ["Tweak & post", "Ask for changes in plain words, export the MP4 and run it.", "bg-lime text-ink"],
           ].map(([t, b, c], i) => (
             <li key={t} className="rounded-2xl bg-white/10 p-6 ring-1 ring-white/20 backdrop-blur">
               <span className={`mb-8 grid h-10 w-10 place-items-center rounded-full text-sm font-bold ${c}`}>{i + 1}</span>
@@ -117,29 +117,29 @@ export default function Landing() {
 
       {/* 3 · Features */}
       <Band id="features" tone="warm">
-        <SectionHead kicker="Features" title="Everything happens in one workspace" body="From reading your site to a finished, on-beat video. Examples use a fictional brand." />
+        <SectionHead kicker="Features" title="From product page to ready-to-run ad" body="Everything happens in one workspace. Examples use a fictional store." />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <Tile title="Reads your site" body="Homepage, features, pricing and about pages. Colors, fonts and logo come straight from your CSS.">
+          <Tile title="Reads your store" body="Product, collection, pricing and about pages. Your colors, fonts and logo come straight from the site.">
             <ul className="space-y-1.5 font-mono text-xs">
-              {["/", "/features", "/pricing", "/about"].map((p, i) => (
+              {["/", "/products/lumen-mug", "/collections/bestsellers", "/account"].map((p, i) => (
                 <li key={p} className="flex items-center justify-between rounded-md bg-[#FAFAFC] px-2 py-1.5">
-                  <span>tidyflow.example{p === "/" ? "" : p}</span>
+                  <span className="truncate">lumenmug.example{p === "/" ? "" : p}</span>
                   <span className={i < 3 ? "text-lime-deep" : "text-slate"}>{i < 3 ? "read" : "skipped"}</span>
                 </li>
               ))}
             </ul>
             <div className="mt-2 flex gap-1.5">
-              {["#14B88A", "#FF7A1A", "#1B1B1F", "#F4F4F6"].map((c) => <span key={c} className="h-6 flex-1 rounded" style={{ background: c }} title={c} />)}
+              {["#E8572A", "#2B2D42", "#F2C14E", "#F7F3EE"].map((c) => <span key={c} className="h-6 flex-1 rounded" style={{ background: c }} title={c} />)}
             </div>
           </Tile>
 
-          <Tile title="Facts, not guesses" body="Every claim shows where it came from. Features we can't find on your site are left out.">
+          <Tile title="Facts, not guesses" body="Every claim links to where it came from. Features, prices or offers we can't find on your page are left out.">
             <ul className="space-y-1.5 text-xs">
               {[
-                ["AI-drafted replies", "verified"],
-                ["Automatic routing by topic", "verified"],
-                ["Support leads at SaaS teams", "inferred"],
-                ["Voice transcription", "dropped"],
+                ["Keeps coffee hot for 3 hours", "verified"],
+                ["Free shipping over $50", "verified"],
+                ["Busy remote workers", "inferred"],
+                ["Wireless charging", "dropped"],
               ].map(([v, t]) => (
                 <li key={v} className="flex items-center justify-between gap-2 rounded-md border border-line px-2 py-1.5">
                   <span className={t === "dropped" ? "text-slate line-through" : ""}>{v}</span>
@@ -151,15 +151,15 @@ export default function Landing() {
 
           <Tile title="Edit in plain words" body="Ask for a change and the concept is rewritten. Format and length requests are applied exactly.">
             <div className="space-y-2 text-xs">
-              <p className="ml-auto w-fit max-w-[85%] rounded-lg rounded-br-sm bg-violet px-2.5 py-1.5 text-white">Shorter: 15 seconds, vertical. Open on the dashboard.</p>
-              <p className="w-fit max-w-[85%] rounded-lg rounded-bl-sm bg-[#F2F2F6] px-2.5 py-1.5">Done: 9:16, 4 scenes, 15s. Scene 1 now opens on the product.</p>
+              <p className="ml-auto w-fit max-w-[85%] rounded-lg rounded-br-sm bg-violet px-2.5 py-1.5 text-white">15 seconds, vertical. Open on the product, mention free shipping.</p>
+              <p className="w-fit max-w-[85%] rounded-lg rounded-bl-sm bg-[#F2F2F6] px-2.5 py-1.5">Done: 9:16, 4 scenes, 15s. Opens on the mug, free shipping in the end card.</p>
               <div className="flex flex-wrap gap-1">
-                {["Punchier", "More playful", "Stronger CTA"].map((q) => <span key={q} className="rounded-full border border-line px-2 py-0.5">{q}</span>)}
+                {["More urgency", "Feature the bestseller", "Stronger CTA"].map((q) => <span key={q} className="rounded-full border border-line px-2 py-0.5">{q}</span>)}
               </div>
             </div>
           </Tile>
 
-          <Tile title="Every format" body="Pick a format up front or switch any time. The storyboard re-lays out to match.">
+          <Tile title="Every placement" body="Reels, TikTok, Stories, YouTube and feeds. Switch format any time and the storyboard re-lays out.">
             <div className="flex h-full items-center justify-around gap-2 py-3">
               {[["16:9", "w-20 h-[45px]"], ["1:1", "w-12 h-12"], ["4:5", "w-11 h-[55px]"], ["9:16", "w-9 h-16"]].map(([r, cls], i) => (
                 <div key={r} className="text-center">
@@ -175,7 +175,7 @@ export default function Landing() {
               <table className="w-full text-left font-mono text-[11px]">
                 <thead className="bg-[#FAFAFC] text-slate"><tr><th className="px-2 py-1.5 font-medium">at</th><th className="font-medium">on screen</th><th className="font-medium">motion</th><th className="hidden font-medium sm:table-cell">transition</th><th className="hidden font-medium sm:table-cell">audio</th></tr></thead>
                 <tbody className="divide-y divide-line">
-                  {[["0.0s", "“200 unread.”", "word stagger", "wipe left", "music in"], ["4.0s", "“Sorting by hand?”", "screenshot reveal", "wipe left", "—"], ["8.0s", "Meet Tidyflow", "logo reveal", "circle reveal", "beat drop"], ["12.0s", "Start free trial", "CTA end card", "cut", "hit"]].map((r) => (
+                  {[["0.0s", "“Cold coffee. Again.”", "word stagger", "wipe left", "swipe up"], ["2.5s", "“Hot for 3 hours.”", "product reveal", "circle reveal", "pop"], ["6.0s", "3 hours of perfect sips", "stat counter", "zoom through", "impact"], ["8.5s", "Shop now", "CTA end card", "cut", "hit"]].map((r) => (
                     <tr key={r[0]}>{r.map((c, i) => <td key={i} className={`px-2 py-1.5 ${i >= 3 ? "hidden sm:table-cell" : ""} ${i === 1 ? "font-sans text-xs font-semibold" : ""}`}>{c}</td>)}</tr>
                   ))}
                 </tbody>
@@ -183,21 +183,21 @@ export default function Landing() {
             </div>
           </Tile>
 
-          <Tile title="Three directions, every time" body="Problem → Solution, Product in Motion and Brand Manifesto. Pick one, or ask for three new ones.">
+          <Tile title="Three angles to test" body="Problem → Solution, Product in Motion and Brand Manifesto. Run them side by side and keep the winner.">
             <ul className="space-y-1.5 text-xs">
-              {[["A", "bg-coral text-white", "200 unread. Then, none."], ["B", "bg-cyan", "Route. Draft. Send."], ["C", "bg-violet text-white", "Support should feel human."]].map(([s, c, t]) => (
+              {[["A", "bg-coral text-white", "Cold coffee? Never again."], ["B", "bg-cyan", "Sip. Set. Stay hot."], ["C", "bg-violet text-white", "Good mornings deserve better."]].map(([s, c, t]) => (
                 <li key={s} className="flex items-center gap-2 rounded-md border border-line px-2 py-1.5"><span className={`grid h-5 w-5 place-items-center rounded text-[10px] font-bold ${c}`}>{s}</span><span className="truncate font-semibold">{t}</span></li>
               ))}
             </ul>
           </Tile>
 
           <Tile title="Live motion preview" body="Kinetic type, geometric motion and transitions, set to original music with cuts on the beat, then exported to MP4." className="lg:row-span-2">
-            <div className="mx-auto max-w-[220px]"><ScenePreview plan={sampleVerticalPlan} productName="Tidyflow" autoPlay controls={false} compact /></div>
+            <div className="mx-auto max-w-[220px]"><ScenePreview plan={sampleVerticalPlan} productName="Lumen" autoPlay controls={false} compact /></div>
           </Tile>
 
-          <Tile title="Your brand, saved" body="Fix a color or star a feature once. Every future ad uses it.">
+          <Tile title="Your brand, saved" body="Star your best products and selling points once. Every future ad uses them.">
             <div className="space-y-1.5 text-xs">
-              {[["Automatic routing", true], ["AI-drafted replies", true], ["Shared inbox", false]].map(([f, on]) => (
+              {[["3-hour heat", true], ["Dishwasher-safe lid", true], ["Gift box", false]].map(([f, on]) => (
                 <div key={f as string} className="flex items-center gap-2 rounded-md border border-line px-2 py-1.5">
                   <span className={on ? "text-yellow-deep" : "text-line-strong"}>★</span><span>{f as string}</span>
                 </div>
@@ -205,12 +205,12 @@ export default function Landing() {
             </div>
           </Tile>
 
-          <Tile title="Everything saved" body="Projects, brands and every storyboard version, ready when you come back." className="sm:col-span-2">
+          <Tile title="Every product, every campaign" body="Launches, promos and evergreen ads for each product, with every version saved." className="sm:col-span-2">
             <ul className="divide-y divide-line overflow-hidden rounded-md border border-line text-xs">
               {[
-                ["Tidyflow launch", "tidyflow.example", "Concepts ready", "border-lime text-lime-deep", ["#14B88A", "#FF7A1A"]],
-                ["Brightmug store", "brightmug.example", "Writing concepts", "border-yellow text-yellow-deep", ["#FF6B6B", "#FFD166"]],
-                ["Spring sale teaser", "northwind.example", "Reading site", "border-cyan text-cyan-deep", ["#39C6E8", "#202124"]],
+                ["Lumen Mug launch", "lumenmug.example", "Concepts ready", "border-lime text-lime-deep", ["#E8572A", "#2B2D42"]],
+                ["Black Friday promo", "northwind.example", "Writing concepts", "border-yellow text-yellow-deep", ["#FF6B6B", "#FFD166"]],
+                ["Course launch teaser", "learnloop.example", "Reading page", "border-cyan text-cyan-deep", ["#39C6E8", "#202124"]],
               ].map(([n, h, st, cls, pal]) => (
                 <li key={n as string} className="flex items-center gap-2.5 px-2.5 py-2">
                   <span className="flex h-6 w-6 overflow-hidden rounded">{(pal as string[]).map((c) => <span key={c} className="flex-1" style={{ background: c }} />)}</span>
@@ -226,7 +226,7 @@ export default function Landing() {
 
       {/* 4 · Sound */}
       <Band id="sound" tone="fresh">
-        <SectionHead kicker="Music & sound" title="Sounds as good as it looks" body="Every concept gets a track that fits its mood. Cuts and transitions land on the beat, and the music sits underneath your message. Press play." />
+        <SectionHead kicker="Music & sound" title="Sounds as good as it looks" body="Every ad gets a track that fits the product. Cuts and transitions land on the beat, and the music sits under your message. Press play." />
         <MusicTeaser />
       </Band>
 
@@ -235,10 +235,10 @@ export default function Landing() {
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="mb-3 text-sm font-semibold text-lime">Ready when you are</p>
-            <h2 className="text-display text-[clamp(2.4rem,5vw,4rem)]">What would your ad say?</h2>
-            <p className="mt-4 text-lg text-white/75">Find out in about a minute. All it takes is your website.</p>
+            <h2 className="text-display text-[clamp(2.4rem,5vw,4rem)]">What would your product&apos;s ad look like?</h2>
+            <p className="mt-4 text-lg text-white/75">Find out in about a minute. All it takes is a link to what you sell.</p>
           </div>
-          <a href="#start" className="rounded-xl bg-lime px-6 py-4 text-lg font-semibold text-ink transition-transform hover:-translate-y-0.5">Paste your website</a>
+          <a href="#start" className="rounded-xl bg-lime px-6 py-4 text-lg font-semibold text-ink transition-transform hover:-translate-y-0.5">Paste a product link</a>
         </div>
       </Band>
 

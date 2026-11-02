@@ -20,7 +20,7 @@ export async function createProject(_: FormState, form: FormData): Promise<FormS
     try {
       url = normalizeUserUrl(String(form.get("url") ?? "")).toString();
     } catch (e) {
-      return { error: e instanceof UnsafeUrlError ? e.message : "Enter a valid website URL." };
+      return { error: e instanceof UnsafeUrlError ? e.message : "Enter a valid store, product or app link." };
     }
   }
   const rawName = String(form.get("name") ?? "").trim() || (url ? new URL(url).hostname.replace(/^www\./, "") : "");
@@ -102,7 +102,7 @@ export async function updateWebsiteUrl(projectId: string, input: string): Promis
   try {
     url = normalizeUserUrl(input).toString();
   } catch (e) {
-    return { error: e instanceof UnsafeUrlError ? e.message : "Enter a valid website URL." };
+    return { error: e instanceof UnsafeUrlError ? e.message : "Enter a valid store, product or app link." };
   }
   const { error } = await supabase.from("projects").update({ website_url: url }).eq("id", projectId).eq("user_id", user.id);
   if (error) return { error: "Couldn't save the URL." };

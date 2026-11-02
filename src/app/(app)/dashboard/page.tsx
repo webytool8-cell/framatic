@@ -41,7 +41,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-heading text-3xl">Projects</h1>
-          <p className="text-sm text-slate">Paste a website to make a new ad, or pick up where you left off.</p>
+          <p className="text-sm text-slate">Paste a store or product link to make a new ad, or pick up where you left off.</p>
         </div>
         <dl className="flex divide-x divide-line overflow-hidden rounded-lg border border-line bg-white text-sm">
           {[
@@ -60,7 +60,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       <section className="rounded-2xl bg-[radial-gradient(700px_300px_at_0%_0%,#F0EBFF_0%,transparent_70%),radial-gradient(600px_300px_at_100%_100%,#E7F8FD_0%,transparent_70%)] p-6 ring-1 ring-black/5 sm:p-8" aria-label="New ad">
         <h2 className="text-heading mb-1 text-xl">Make a new ad</h2>
-        <p className="mb-5 text-sm text-slate">Paste a website. Concepts are ready in about a minute.</p>
+        <p className="mb-5 text-sm text-slate">Paste a store, product or app link. Concepts are ready in about a minute.</p>
         <Composer size="md" />
       </section>
       {password === "updated" && <p className="rounded-lg border-l-4 border-lime bg-mint px-4 py-2 text-sm">Your password was updated.</p>}

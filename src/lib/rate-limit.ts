@@ -11,7 +11,7 @@ export const LIMITS: Record<UsageKind, { max: number; windowMinutes: number }> =
 
 export class RateLimitError extends Error {
   constructor(public readonly kind: UsageKind, public readonly retryAfterMinutes: number) {
-    super(`You've reached the hourly limit for ${kind === "analyze" ? "website analyses" : kind === "render" ? "video exports" : "concept generation"}. Try again in about ${retryAfterMinutes} minutes.`);
+    super(`You've reached the hourly limit for ${kind === "analyze" ? "link analyses" : kind === "render" ? "video exports" : "concept generation"}. Try again in about ${retryAfterMinutes} minutes.`);
     this.name = "RateLimitError";
   }
 }

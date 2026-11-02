@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   try {
     url = normalizeUserUrl(String(form.get("url") ?? "")).toString();
   } catch (e) {
-    return NextResponse.json({ error: e instanceof UnsafeUrlError ? e.message : "Enter your website address, like yourproduct.com." }, { status: 400 });
+    return NextResponse.json({ error: e instanceof UnsafeUrlError ? e.message : "Paste a link to your store, product page or app, like yourstore.com." }, { status: 400 });
   }
   const ideas = form.getAll("idea").map(String).filter((id) => STARTER_IDEAS.some((i) => i.id === id));
   await saveDraft(Brief.parse({ url, notes: String(form.get("notes") ?? "").slice(0, 600), ideas }));

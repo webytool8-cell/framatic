@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Framatic — AI creative production studio", template: "%s · Framatic" },
-  description: "Turn your website into a polished, brand-specific video ad concept with AI-powered creative direction.",
+  description: "Turn your store, product or app into scroll-stopping video ads, written, storyboarded and set to music by AI.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

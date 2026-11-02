@@ -15,16 +15,16 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
   const started = Date.now();
   const project = await getProject(db, userId, projectId);
   if (!project?.website_url) {
-    await setProjectStatus(db, userId, projectId, "analysis_failed", "This project has no website URL. Add one or enter your brand details manually.");
+    await setProjectStatus(db, userId, projectId, "analysis_failed", "This project has no link. Add one or enter your product details manually.");
     return;
   }
 
   let site: SiteAnalysis;
   try {
-    await setProjectStatus(db, userId, projectId, "analyzing", "Reading your website…");
+    await setProjectStatus(db, userId, projectId, "analyzing", "Reading your product pages…");
     site = await crawlSite(project.website_url, crawlOptions);
   } catch (e) {
-    const userMessage = e instanceof CrawlError ? e.userMessage : "Something went wrong while reading the website.";
+    const userMessage = e instanceof CrawlError ? e.userMessage : "Something went wrong while reading the page.";
     log.warn("crawl failed", { projectId, error: (e as Error).message });
     await setProjectStatus(db, userId, projectId, "analysis_failed", `${userMessage} You can try again or fill in your brand details manually.`);
     return;

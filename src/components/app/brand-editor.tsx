@@ -187,7 +187,7 @@ export function BrandEditor({ projectId, initial, aiReady = false }: { projectId
         </Alert>
       )}
       <p className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate">
-        Labels: <Tag tone="verified">From site</Tag> found verbatim on your website · <Tag tone="inferred">AI interpretation</Tag> our read, not a fact · <Tag tone="user">Yours</Tag> written or edited by you
+        Labels: <Tag tone="verified">From site</Tag> found word-for-word on your pages · <Tag tone="inferred">AI interpretation</Tag> our read, not a fact · <Tag tone="user">Yours</Tag> written or edited by you
       </p>
 
       <div className="grid gap-4 lg:grid-cols-2">

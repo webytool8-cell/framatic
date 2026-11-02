@@ -23,13 +23,13 @@ export function NewProjectForm({ brands }: { brands: Array<{ id: string; name: s
             onClick={() => setMode(m)}
             className={cn("rounded-full px-4 py-1.5 text-sm font-semibold transition-colors", mode === m ? "bg-ink text-white" : "text-slate hover:text-ink")}
           >
-            {m === "url" ? "Analyze a website" : "Enter brand manually"}
+            {m === "url" ? "Analyze a store or product" : "Enter brand manually"}
           </button>
         ))}
       </div>
 
       {mode === "url" && (
-        <Field label="Website URL" htmlFor="url" hint="We read a handful of public pages — homepage, features, pricing, about. Nothing behind a login.">
+        <Field label="Store, product or app link" htmlFor="url" hint="We read a handful of public pages: home, product, pricing, about. Nothing behind a login.">
           <div className="relative">
             <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-slate">https://</span>
             <Input id="url" name="url" required={mode === "url"} placeholder="yourproduct.com" className="h-14 pl-[4.6rem] text-lg" autoFocus inputMode="url" autoComplete="url" />
@@ -54,7 +54,7 @@ export function NewProjectForm({ brands }: { brands: Array<{ id: string; name: s
 
       {state?.error && <Alert>{state.error}</Alert>}
       <Button type="submit" size="lg" disabled={pending} className="w-full sm:w-auto">
-        {pending ? "Creating…" : mode === "url" && !reuse ? "Analyze website" : "Create project"}
+        {pending ? "Creating…" : mode === "url" && !reuse ? "Analyze link" : "Create project"}
       </Button>
     </form>
   );

@@ -13,7 +13,7 @@ const CHIP_ON = [
   "border-coral bg-peach",
 ];
 
-/** The one input that starts everything: website + optional direction + starter ideas. */
+/** The one input that starts everything: store/product/app link + optional direction + starter ideas. */
 export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boolean; size?: "lg" | "md" }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
         )}
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label htmlFor="composer-url" className="sr-only">Your website</label>
+          <label htmlFor="composer-url" className="sr-only">Store, product or app link</label>
           <input
             id="composer-url"
             name="url"
@@ -60,7 +60,7 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
             inputMode="url"
             autoComplete="url"
             spellCheck={false}
-            placeholder="Paste your website URL"
+            placeholder="Paste a product link"
             className={cn("min-w-0 flex-1 rounded-2xl bg-transparent px-4 font-medium text-ink placeholder:text-slate/70 focus:outline-none focus-visible:outline-none", size === "lg" ? "h-16 text-xl" : "h-11 text-base")}
           />
           <button
@@ -80,7 +80,7 @@ export function Composer({ autoFocus = false, size = "lg" }: { autoFocus?: boole
           name="notes"
           rows={1}
           maxLength={600}
-          placeholder="Anything we should know? (optional)"
+          placeholder="An offer, a launch, a vibe? (optional)"
           className="block w-full resize-none rounded-xl border-t border-line bg-transparent px-4 py-3 text-[15px] text-ink placeholder:text-slate/70 focus:outline-none focus-visible:outline-none"
         />
       </div>

@@ -44,7 +44,7 @@ export default async function BrandPage({ params }: { params: Promise<{ id: stri
           </ul>
           {project.website_url && (
             <div className="mt-4 max-w-sm">
-              <JobRunner projectId={id} kind="autopilot" status={effectiveStatus(project).status} label="Read the website again" variant="secondary" />
+              <JobRunner projectId={id} kind="autopilot" status={effectiveStatus(project).status} label="Read the page again" variant="secondary" />
               <p className="mt-2 text-xs text-slate">Keeps everything you&apos;ve edited, then refreshes the ads.</p>
             </div>
           )}

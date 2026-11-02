@@ -11,7 +11,7 @@ export function DraftBanner({ brief }: { brief: Brief }) {
       {(ideas.length > 0 || brief.notes) && (
         <p className="mt-1 line-clamp-2 text-sm">{[...ideas.map((i) => i.label), brief.notes].filter(Boolean).join(" · ")}</p>
       )}
-      <p className="mt-2 text-sm text-slate">As soon as you&apos;re in, we&apos;ll read the site and write three concepts.</p>
+      <p className="mt-2 text-sm text-slate">As soon as you&apos;re in, we&apos;ll read the page and write three ad concepts.</p>
     </div>
   );
 }

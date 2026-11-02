@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CAMPAIGN_OBJECTIVES } from "@/lib/brand/schema";
 
 /**
- * The "brief" a user gives up front: a website plus optional direction.
+ * The "brief" a user gives up front: a store, product or app link plus optional direction.
  * Starter ideas are one-tap shortcuts that fill the brief and set structured
  * preferences the creative director uses.
  */
@@ -17,12 +17,12 @@ export const StarterIdea = z.object({
 export type StarterIdea = z.infer<typeof StarterIdea>;
 
 export const STARTER_IDEAS: StarterIdea[] = [
-  { id: "launch", label: "Launch announcement", text: "Announce the launch and build excitement.", objective: "feature_launch" },
-  { id: "trials", label: "Get more free-trial sign-ups", text: "Drive free-trial sign-ups.", objective: "free_trial" },
-  { id: "demo", label: "Show the product in action", text: "Show the real product doing its best work." },
-  { id: "vertical", label: "15s vertical for Reels & TikTok", text: "Short vertical cut for social.", aspectRatio: "9:16", targetDurationSec: 15 },
-  { id: "manifesto", label: "Bold brand manifesto", text: "A bold, typographic piece about what the brand believes." },
-  { id: "retarget", label: "Win back site visitors", text: "Remind people who visited why they should come back.", objective: "retargeting" },
+  { id: "launch", label: "New product launch", text: "Launch a new product and drive the first orders.", objective: "feature_launch" },
+  { id: "sale", label: "Sale or promo", text: "Promote the offer that's live on the store. Only use offers that actually appear on the page.", objective: "purchases" },
+  { id: "bestseller", label: "Bestseller spotlight", text: "Spotlight the best-selling product and why people love it.", objective: "purchases" },
+  { id: "vertical", label: "15s vertical for Reels & TikTok", text: "Short vertical cut for social feeds.", aspectRatio: "9:16", targetDurationSec: 15 },
+  { id: "trials", label: "Free trial or sign-ups", text: "For a digital product or app: drive free-trial or account sign-ups.", objective: "free_trial" },
+  { id: "retarget", label: "Win back past shoppers", text: "Bring back people who browsed or added to cart but didn't buy.", objective: "retargeting" },
 ];
 
 export const Brief = z.object({

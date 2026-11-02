@@ -24,7 +24,7 @@ describe("brief from the landing page", () => {
     const prefs = briefToPreferences(Brief.parse({ url: "https://x.example/", notes: "Spring sale, 20% off", ideas: ["vertical", "trials"] }));
     expect(prefs).toMatchObject({ aspectRatio: "9:16", targetDurationSec: 15, objective: "free_trial" });
     expect(prefs.notes).toContain("Spring sale, 20% off");
-    expect(prefs.notes).toContain("Drive free-trial sign-ups.");
+    expect(prefs.notes).toContain("drive free-trial or account sign-ups");
   });
 
   it("reads format and length hints from plain-language requests", () => {

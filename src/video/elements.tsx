@@ -128,7 +128,7 @@ export function ProductWindow({ plan, unit, recording, image, label }: { plan: S
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
+      ) : recording ? (
         <div style={{ display: "grid", gridTemplateColumns: "28% 1fr", height: "100%" }}>
           <div style={{ background: "#F7F7FA", padding: unit * 1.5, display: "flex", flexDirection: "column", gap: unit }}>
             {[0, 1, 2, 3].map((i) => <div key={i} style={{ height: unit * 1.2, borderRadius: unit, background: i === 1 ? plan.palette.primary : "rgba(0,0,0,0.08)", width: `${80 - i * 10}%` }} />)}
@@ -143,6 +143,22 @@ export function ProductWindow({ plan, unit, recording, image, label }: { plan: S
             ))}
             <div style={{ marginTop: "auto", alignSelf: "flex-start", padding: `${unit}px ${unit * 2}px`, borderRadius: unit * 3, background: plan.palette.primary, color: inkOn(plan.palette.primary), fontSize: unit * 1.4, fontWeight: 700, transform: `scale(${click ? 0.94 : 1})` }}>
               {label || "Get started"}
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Product-page mock: hero image block, title, price, add-to-cart.
+        <div style={{ display: "grid", gridTemplateColumns: "52% 1fr", height: "100%" }}>
+          <div style={{ margin: unit * 1.5, borderRadius: unit * 1.2, background: `radial-gradient(circle at 35% 35%, ${plan.palette.accent} 0%, ${plan.palette.primary} 55%, ${plan.palette.secondary} 130%)`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", left: "28%", top: "26%", width: "44%", height: "52%", borderRadius: `${unit}px ${unit}px ${unit * 3}px ${unit * 3}px`, background: "rgba(255,255,255,0.85)", transform: `scale(${interpolate(frame, [0, fps * 0.6], [0.85, 1], { extrapolateRight: "clamp" })})` }} />
+          </div>
+          <div style={{ padding: `${unit * 2.4}px ${unit * 2}px`, display: "flex", flexDirection: "column", gap: unit * 1.2 }}>
+            <div style={{ height: unit * 1.1, width: "40%", borderRadius: unit, background: "rgba(0,0,0,0.08)" }} />
+            <div style={{ height: unit * 2, width: "85%", borderRadius: unit, background: "rgba(0,0,0,0.14)" }} />
+            <div style={{ display: "flex", gap: unit * 0.4 }}>{[0, 1, 2, 3, 4].map((i) => <span key={i} style={{ width: unit * 1.2, height: unit * 1.2, borderRadius: 2, background: plan.palette.accent }} />)}</div>
+            {[0, 1].map((i) => <div key={i} style={{ height: unit, width: `${90 - i * 20}%`, borderRadius: unit, background: "rgba(0,0,0,0.06)" }} />)}
+            <div style={{ marginTop: "auto", padding: `${unit * 1.1}px ${unit * 2}px`, borderRadius: unit * 3, background: plan.palette.primary, color: inkOn(plan.palette.primary), fontSize: unit * 1.4, fontWeight: 700, textAlign: "center", transform: `scale(${click ? 0.94 : 1})` }}>
+              {label || "Add to cart"}
             </div>
           </div>
         </div>

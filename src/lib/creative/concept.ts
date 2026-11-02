@@ -11,14 +11,14 @@ export const CONCEPT_META: Record<ConceptKind, { slot: "A" | "B" | "C"; label: s
     label: "Problem → Solution",
     accent: "coral",
     brief:
-      "A narrative that opens on a real, specific problem the audience recognizes (from the brand profile), builds tension briefly, reveals the product as the answer, then communicates its value and ends on the CTA.",
+      "A narrative that opens on a real, specific problem or desire the shopper recognizes (from the brand profile), builds tension briefly, reveals the product as the answer, then shows its value and ends on a clear buy or sign-up CTA.",
   },
   product_in_motion: {
     slot: "B",
     label: "Product in Motion",
     accent: "cyan",
     brief:
-      "A feature-focused ad centered on the actual product interface. Most scenes show screenshots or product recordings with feature callouts for the emphasized, verified features. Fast, clear, demonstrative.",
+      "A product-focused ad that shows the real thing: product shots for physical goods, app screens or recordings for software and digital products. Feature callouts for the emphasized, verified features or benefits. Fast, clear, demonstrative, built to sell.",
   },
   brand_manifesto: {
     slot: "C",

@@ -31,7 +31,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     return (
       <Card accent="coral" className="relative mx-auto max-w-2xl overflow-hidden p-8">
         <Arc aria-hidden className="absolute -right-6 -top-2 h-16 w-32" color="#FFF0E8" stroke={18} />
-        <h2 className="text-heading mb-3 text-2xl">We couldn&apos;t read this website</h2>
+        <h2 className="text-heading mb-3 text-2xl">We couldn&apos;t read this page</h2>
         <p className="mb-6 text-slate">{message ?? "Something went wrong."}</p>
         <div className="flex flex-wrap gap-3">
           {project.website_url && <JobRunner projectId={id} kind="autopilot" status={status} label="Try again" />}

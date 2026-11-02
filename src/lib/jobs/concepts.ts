@@ -24,7 +24,7 @@ export async function resolvePreferences(db: SupabaseClient, userId: string, pro
 export async function generateAllConcepts(db: SupabaseClient, userId: string, projectId: string): Promise<void> {
   try {
     const project = await getProject(db, userId, projectId);
-    if (!project?.brand_profile_id) throw new UserFacingError("Analyze the website or complete the brand profile first.");
+    if (!project?.brand_profile_id) throw new UserFacingError("Analyze the link or complete the brand profile first.");
     const brand = await getBrandProfile(db, userId, project.brand_profile_id);
     if (!brand) throw new UserFacingError("The brand profile for this project is missing.");
     const llm = getLLM();

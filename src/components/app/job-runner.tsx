@@ -9,9 +9,9 @@ import type { ProjectStatus } from "@/lib/types";
 type Kind = "analyze" | "generate" | "autopilot";
 const RUNNING: Record<Kind, ProjectStatus[]> = { analyze: ["analyzing"], generate: ["generating"], autopilot: ["analyzing", "generating"] };
 const ENDPOINT: Record<Kind, string> = { analyze: "analyze", generate: "concepts", autopilot: "autopilot" };
-const TITLE: Record<Kind, string> = { analyze: "Reading your website", generate: "Writing your ad concepts", autopilot: "Making your ad concepts" };
+const TITLE: Record<Kind, string> = { analyze: "Reading your store", generate: "Writing your ad concepts", autopilot: "Making your ad concepts" };
 const STEPS: Record<Kind, string[]> = {
-  autopilot: ["Reading your website", "Picking up colors, type and logo", "Understanding the product and audience", "Writing three creative directions", "Planning every scene"],
+  autopilot: ["Reading your product pages", "Picking up colors, type and logo", "Understanding what you sell and who buys it", "Writing three creative directions", "Planning every scene"],
   analyze: ["Checking the address", "Reading your pages", "Collecting colors, type and assets", "Understanding the product", "Writing the brand profile"],
   generate: ["Reading the brand profile", "Finding the strongest stories", "Writing three directions", "Planning scenes and timing", "Validating scene plans"],
 };

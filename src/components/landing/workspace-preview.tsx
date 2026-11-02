@@ -6,9 +6,9 @@ import { cn } from "@/lib/cn";
 import type { ScenePlan } from "@/lib/creative/scene-plan";
 
 const CONCEPTS = [
-  { slot: "A", name: "Problem → Solution", title: "Inbox, sorted.", color: "bg-coral text-white", ring: "border-coral" },
-  { slot: "B", name: "Product in Motion", title: "Route. Draft. Send.", color: "bg-cyan text-ink", ring: "border-cyan" },
-  { slot: "C", name: "Brand Manifesto", title: "Support should feel human.", color: "bg-violet text-white", ring: "border-violet" },
+  { slot: "A", name: "Problem → Solution", title: "Never cold again", color: "bg-coral text-white", ring: "border-coral" },
+  { slot: "B", name: "Product in Motion", title: "Sip. Set. Stay hot.", color: "bg-cyan text-ink", ring: "border-cyan" },
+  { slot: "C", name: "Brand Manifesto", title: "Good mornings deserve better", color: "bg-violet text-white", ring: "border-violet" },
 ];
 
 /**
@@ -19,7 +19,7 @@ export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
   const [active, setActive] = useState(0);
   const c = CONCEPTS[active];
   const p = useMemo(() => {
-    const scenes = plan.scenes.map((s, i) => (i === 0 ? { ...s, headline: active === 0 ? "200 unread." : active === 1 ? "Route. Draft. Send." : "Support, but human." } : s));
+    const scenes = plan.scenes.map((s, i) => (i === 0 ? { ...s, headline: active === 0 ? "Cold coffee. Again." : active === 1 ? "Sip. Set. Stay hot." : "Mornings, upgraded." } : s));
     return { ...plan, scenes };
   }, [plan, active]);
 
@@ -29,7 +29,7 @@ export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
         <span aria-hidden className="flex gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-coral" /><span className="h-2.5 w-2.5 rounded-full bg-yellow" /><span className="h-2.5 w-2.5 rounded-full bg-lime" />
         </span>
-        <span className="ml-2 truncate rounded-md bg-white px-2 py-0.5 font-mono text-[11px] text-slate">framatic / tidyflow.example</span>
+        <span className="ml-2 truncate rounded-md bg-white px-2 py-0.5 font-mono text-[11px] text-slate">framatic / lumenmug.example</span>
         <span className="ml-auto rounded bg-butter px-1.5 py-0.5 text-[10px] font-semibold text-yellow-deep">Example output</span>
       </div>
 
@@ -37,12 +37,12 @@ export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
         {/* Brand panel */}
         <div className="hidden border-r border-line p-3 text-xs md:block">
           <p className="mb-2 font-semibold">Brand</p>
-          <div className="mb-2 flex h-5 overflow-hidden rounded"><span className="flex-[3] bg-[#14B88A]" /><span className="flex-[2] bg-[#FF7A1A]" /><span className="flex-1 bg-[#1B1B1F]" /></div>
-          <p className="mb-3 text-slate">Space Grotesk · light</p>
+          <div className="mb-2 flex h-5 overflow-hidden rounded"><span className="flex-[3] bg-[#E8572A]" /><span className="flex-[2] bg-[#2B2D42]" /><span className="flex-1 bg-[#F2C14E]" /></div>
+          <p className="mb-3 text-slate">Space Grotesk · light · $39</p>
           <ul className="space-y-2">
-            <li><p className="text-slate">Promise</p><p className="font-medium">Inbox zero for support teams</p><Tag tone="verified">From site</Tag></li>
-            <li><p className="text-slate">Feature</p><p className="font-medium">AI-drafted replies</p><Tag tone="verified">From site</Tag></li>
-            <li><p className="text-slate">Audience</p><p className="font-medium">Support leads at SaaS teams</p><Tag tone="inferred">AI read</Tag></li>
+            <li><p className="text-slate">Promise</p><p className="font-medium">Your coffee, hot for 3 hours</p><Tag tone="verified">From site</Tag></li>
+            <li><p className="text-slate">Feature</p><p className="font-medium">Dishwasher-safe lid</p><Tag tone="verified">From site</Tag></li>
+            <li><p className="text-slate">Audience</p><p className="font-medium">Busy remote workers</p><Tag tone="inferred">AI read</Tag></li>
           </ul>
         </div>
 
@@ -66,9 +66,9 @@ export function WorkspacePreview({ plan }: { plan: ScenePlan }) {
             <p className="truncate text-sm font-semibold">{c.title}</p>
             <p className="shrink-0 font-mono text-[11px] text-slate">16:9 · {p.durationSec.toFixed(0)}s · 4 scenes · live preview</p>
           </div>
-          <ScenePreview plan={p} productName="Tidyflow" autoPlay controls={false} compact />
+          <ScenePreview plan={p} productName="Lumen" autoPlay controls={false} compact />
           <dl className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">
-            {[["Headline", active === 2 ? "Support should feel human." : "Inbox zero, every day"], ["CTA", "Start free trial"], ["Music", active === 2 ? "Warm synth, 96 bpm" : "Upbeat lo-fi, 112 bpm"]].map(([k, v]) => (
+            {[["Headline", active === 2 ? "Good mornings deserve better" : "Coffee that waits for you"], ["CTA", "Shop now"], ["Music", active === 2 ? "Soft Piano, 74 bpm" : "Bright Pop, 120 bpm"]].map(([k, v]) => (
               <div key={k} className="min-w-0 rounded-md bg-[#FAFAFC] px-2 py-1.5"><dt className="text-slate">{k}</dt><dd className="truncate font-semibold">{v}</dd></div>
             ))}
           </dl>

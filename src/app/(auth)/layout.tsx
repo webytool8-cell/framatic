@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Arc className="absolute bottom-40 left-24 h-24 w-48 animate-drift-slow" color="#FF6B6B" stroke={16} />
         <Dots className="absolute right-24 bottom-56 h-12 w-20" />
         <div className="absolute inset-x-16 top-1/2 -translate-y-1/2">
-          <p className="text-display text-6xl xl:text-7xl">Your website.<br /><span className="text-violet-deep">A whole new</span> motion.</p>
+          <p className="text-display text-6xl xl:text-7xl">Your product.<br /><span className="text-violet-deep">A whole new</span> motion.</p>
         </div>
       </aside>
     </div>
