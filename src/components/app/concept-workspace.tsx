@@ -1,5 +1,6 @@
 "use client";
 import { CREDIT_COST, type CreditCosts } from "@/lib/plans";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { restoreSceneVersion, saveManualEdits, setPreferredConcept, updateConceptPreferences, updateMusic } from "@/app/actions/concepts";
@@ -291,7 +292,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
             <section className="rounded-[var(--radius-card)] border-[1.5px] border-dashed border-line-strong bg-white p-4">
               <h3 className="text-heading text-lg">Export</h3>
               <p className="mt-1 text-sm text-slate">Exports are turned off for the sample project. Make your own project to export MP4s of your ads.</p>
-              <a href="/projects/new" className="mt-3 inline-flex rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</a>
+              <Link href="/projects/new" className="mt-3 inline-flex rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</Link>
             </section>
           ) : (
           <ExportPanel renderCost={creditCosts.render} conceptId={concept.id} enabled={renderReady} initial={renders} version={concept.version} aspectRatio={concept.plan.aspectRatio} durationSec={concept.plan.durationSec} hasUnsaved={anyDirty} />
@@ -348,7 +349,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
             <div className="flex gap-2">
               <Button variant="ghost" disabled={!!busy} onClick={undoAll}>{sample ? "Reset" : "Undo all"}</Button>
               {sample ? (
-                <a href="/projects/new" className="inline-flex items-center rounded-lg bg-violet px-4 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</a>
+                <Link href="/projects/new" className="inline-flex items-center rounded-lg bg-violet px-4 text-sm font-semibold text-white hover:bg-violet-deep">Start your own project</Link>
               ) : (
                 <Button disabled={!!busy} onClick={() => run("save", saveAll, () => { setDirtyFields(new Set()); setScenesDirty(false); setPrefsDirty(false); })}>
                   {busy === "save" ? "Saving…" : "Save changes"}
