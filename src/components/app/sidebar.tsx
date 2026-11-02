@@ -6,6 +6,9 @@ import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/shapes";
 import { cn } from "@/lib/cn";
 import type { ProjectStatus } from "@/lib/types";
+import { CreditPill } from "./credits-card";
+
+export type SidebarCredits = { left: number; allowance: number; unlimited: boolean } | null;
 
 export interface SidebarProject {
   id: string;
@@ -36,7 +39,7 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
   );
 }
 
-function SidebarBody({ projects, email }: { projects: SidebarProject[]; email: string | null }) {
+function SidebarBody({ projects, email, credits }: { projects: SidebarProject[]; email: string | null; credits: SidebarCredits }) {
   const path = usePathname();
   return (
     <div className="flex h-full flex-col">
@@ -79,7 +82,8 @@ function SidebarBody({ projects, email }: { projects: SidebarProject[]; email: s
           );
         })}
       </ul>
-      <div className="border-t border-line p-3">
+      <div className="space-y-3 border-t border-line p-3">
+        {credits && <CreditPill {...credits} />}
         <div className="flex items-center gap-2.5 px-1">
           <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold uppercase text-white">{email?.[0] ?? "?"}</span>
           <span className="min-w-0 flex-1 truncate text-sm">{email}</span>
@@ -93,14 +97,14 @@ function SidebarBody({ projects, email }: { projects: SidebarProject[]; email: s
 }
 
 /** Persistent sidebar on desktop, slide-over drawer on small screens. */
-export function Sidebar({ projects, email }: { projects: SidebarProject[]; email: string | null }) {
+export function Sidebar({ projects, email, credits = null }: { projects: SidebarProject[]; email: string | null; credits?: SidebarCredits }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   useEffect(() => setOpen(false), [path]);
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-line bg-white lg:block">
-        <SidebarBody projects={projects} email={email} />
+        <SidebarBody projects={projects} email={email} credits={credits} />
       </aside>
       <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-white px-4 lg:hidden">
         <Link href="/dashboard" aria-label="Framatic home"><Logo /></Link>
@@ -115,7 +119,7 @@ export function Sidebar({ projects, email }: { projects: SidebarProject[]; email
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button aria-label="Close menu" className="absolute inset-0 bg-ink/30" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 animate-[rise_200ms_var(--ease-snap)_both] bg-white shadow-xl">
-            <SidebarBody projects={projects} email={email} />
+            <SidebarBody projects={projects} email={email} credits={credits} />
           </aside>
         </div>
       )}

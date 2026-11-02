@@ -1,4 +1,5 @@
 "use client";
+import { CREDIT_COST } from "@/lib/plans";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { restoreSceneVersion, setPreferredConcept, updateConceptContent, updateConceptPreferences, updateMusic, updateScenes } from "@/app/actions/concepts";
@@ -278,7 +279,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
                 <Button type="submit" className="w-full" disabled={aiBusy || anyDirty || ask.trim().length < 2}>
                   {busy === "ask" ? "Reworking the concept…" : "Apply changes"}
                 </Button>
-                {anyDirty && <p className="mt-2 text-xs text-slate">Save your edits first.</p>}
+                <p className="mt-2 text-xs text-slate">{anyDirty ? "Save your edits first." : `Each AI change uses ${CREDIT_COST.regenerate} credits. Your own edits are free.`}</p>
               </form>
             </section>
           )}

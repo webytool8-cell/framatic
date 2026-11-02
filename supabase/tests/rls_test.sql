@@ -133,6 +133,29 @@ set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
 do $$ begin
   if (select count(*) from public.user_plans) <> 0 then raise exception 'bob can see alice plan'; end if;
 end $$;
+
+-- Credits: users read their own charges but can't add, change or delete them
+reset role;
+insert into public.usage_events (user_id, kind, credits, ref) values
+  ('00000000-0000-0000-0000-00000000000a', 'analyze', 10, 'p1'),
+  ('00000000-0000-0000-0000-00000000000a', 'refund', -10, 'refund:1');
+update public.user_plans set plan = 'studio', current_period_start = now() where user_id = '00000000-0000-0000-0000-00000000000a';
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+do $$ begin
+  if (select count(*) from public.usage_events where credits <> 0) <> 2 then raise exception 'alice cannot read her credit history'; end if;
+  begin
+    insert into public.usage_events (user_id, kind, credits) values ('00000000-0000-0000-0000-00000000000a', 'refund', -1000);
+    raise exception 'alice granted herself credits';
+  exception when insufficient_privilege then null; end;
+  update public.usage_events set credits = 0;
+  delete from public.usage_events;
+  if (select count(*) from public.usage_events where credits <> 0) <> 2 then raise exception 'alice changed her charges'; end if;
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+do $$ begin
+  if (select count(*) from public.usage_events) <> 0 then raise exception 'bob can see alice charges'; end if;
+end $$;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 
 -- Cascade: deleting the project deletes concepts and scene plans

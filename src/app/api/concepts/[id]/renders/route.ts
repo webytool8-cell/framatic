@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { getBrandProfile, getConcept, getProject } from "@/lib/db/repo";
 import { log } from "@/lib/log";
-import { consumeRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { RateLimitError, chargeCredits, refundLatestCharge, setChargeRef } from "@/lib/rate-limit";
 import { describeRenderError, isRenderConfigured, startCloudRunRender } from "@/lib/render/cloudrun";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -27,7 +27,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const brand = project?.brand_profile_id ? await getBrandProfile(supabase, user.id, project.brand_profile_id) : null;
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "render");
+    const chargeId = await chargeCredits(admin, user.id, "render", id);
     const plan = concept.scenePlan;
     const fileName = `${slug(concept.content.title)}-${plan.aspectRatio.replace(":", "x")}.mp4`;
     const { data: row, error } = await supabase
@@ -35,7 +35,11 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       .insert({ user_id: user.id, project_id: concept.project_id, concept_id: id, scene_plan_version: concept.current_version, aspect_ratio: plan.aspectRatio, duration_sec: plan.durationSec, file_name: fileName })
       .select(COLUMNS)
       .single();
-    if (error) throw error;
+    if (error) {
+      await refundLatestCharge(admin, user.id, id, "render row insert failed");
+      throw error;
+    }
+    if (chargeId !== null) await setChargeRef(admin, chargeId, `render:${row.id}`);
 
     try {
       const execution = await startCloudRunRender({
@@ -49,6 +53,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       log.error("render start failed", { conceptId: id, error: (e as Error).message });
       const message = describeRenderError(e);
       await supabase.from("renders").update({ status: "failed", error: message }).eq("id", row.id).eq("user_id", user.id);
+      await refundLatestCharge(admin, user.id, `render:${row.id}`, "render start failed");
       return jsonError(message, 502);
     }
     return NextResponse.json(row, { status: 202 });

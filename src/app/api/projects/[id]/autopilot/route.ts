@@ -21,7 +21,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (s === "analyzing" || s === "generating") return jsonError("This project is already being worked on.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "analyze");
+    await consumeRateLimit(admin, user.id, "analyze", id);
     await setProjectStatus(admin, user.id, id, "analyzing", "Queued…");
     after(() => runAutopilot(admin, user.id, id));
     return NextResponse.json({ status: "analyzing" }, { status: 202 });

@@ -22,7 +22,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (s === "generating" || s === "analyzing") return jsonError("Another job is already running for this project.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "generate");
+    await consumeRateLimit(admin, user.id, "generate", id);
     await setProjectStatus(admin, user.id, id, "generating", "Developing three creative directions…");
     after(() => generateAllConcepts(admin, user.id, id));
     return NextResponse.json({ status: "generating" }, { status: 202 });

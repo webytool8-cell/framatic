@@ -1,4 +1,5 @@
 "use client";
+import { CREDIT_COST } from "@/lib/plans";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -67,7 +68,7 @@ export function ExportPanel({ conceptId, enabled, initial, version, aspectRatio,
             {starting ? "Starting export…" : "Export MP4"}
           </Button>
           <p className="mt-2 text-xs text-slate">
-            Renders the saved version (v{version}) in the cloud, usually in about a minute.
+            Renders the saved version (v{version}) in the cloud, usually in about a minute. Uses {CREDIT_COST.render} credit.
             {hasUnsaved && <span className="text-coral-deep"> You have unsaved edits; save first to include them.</span>}
           </p>
         </>

@@ -3,8 +3,9 @@ import { SettingsForm } from "@/components/app/settings-form";
 import { SimpleForm } from "@/components/app/simple-form";
 import { changeEmail, changePassword, deleteAccount } from "@/app/actions/account";
 import { requireUser } from "@/lib/supabase/server";
-import { PlanUsage } from "@/components/app/plan-usage";
-import { monthlyUsage } from "@/lib/plans";
+import { CreditsCard, type CreditActivity } from "@/components/app/credits-card";
+import { creditBalance } from "@/lib/plans";
+import { leaveUnlimited, redeemAccessCode } from "@/app/actions/credits";
 import { isAdminEmail } from "@/lib/admin";
 import Link from "next/link";
 
@@ -14,7 +15,10 @@ export default async function Settings() {
   const { supabase, user } = await requireUser();
   const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
   const viaGoogle = user.app_metadata?.provider === "google";
-  const usage = await monthlyUsage(supabase, user.id).catch(() => null);
+  const balance = await creditBalance(supabase, user.id).catch(() => null);
+  const { data: activity } = balance
+    ? await supabase.from("usage_events").select("id, kind, credits, created_at").eq("user_id", user.id).neq("credits", 0).gte("created_at", balance.periodStart.toISOString()).order("created_at", { ascending: false }).limit(8)
+    : { data: [] };
   return (
     <div className="max-w-3xl space-y-8">
       <div>
@@ -22,15 +26,31 @@ export default async function Settings() {
         <p className="text-sm text-slate">Your plan, creative defaults for new ads, and your account.</p>
       </div>
 
-      {usage && (
-        <SectionCard
-          accent="cyan"
-          eyebrow="This month"
-          title="Plan & usage"
-          action={isAdminEmail(user.email) ? <Link href="/admin/usage" className="text-sm font-semibold text-violet-deep hover:underline">Usage & cost for all users →</Link> : undefined}
-        >
-          <PlanUsage plan={usage.plan} meters={usage.meters} resetsAt={usage.resetsAt} />
-        </SectionCard>
+      {balance && (
+        <div id="credits" className="scroll-mt-20">
+          <SectionCard
+            accent="cyan"
+            eyebrow="This month"
+            title="Plan & credits"
+            action={isAdminEmail(user.email) ? <Link href="/admin/usage" className="text-sm font-semibold text-violet-deep hover:underline">Usage & cost for all users →</Link> : undefined}
+          >
+            <CreditsCard balance={balance} activity={(activity ?? []) as CreditActivity[]} />
+            <div className="mt-8 border-t border-line pt-6">
+              {balance.unlimited ? (
+                <div className="max-w-sm">
+                  <h3 className="mb-1 font-semibold">Admin access</h3>
+                  <p className="mb-3 text-sm text-slate">Unlimited credits are on for this account. Switch back to Free to see what users see.</p>
+                  <SimpleForm action={leaveUnlimited} submit="Switch to Free plan" pendingLabel="Switching…" variant="secondary" fields={[]} />
+                </div>
+              ) : (
+                <div className="max-w-sm">
+                  <h3 className="mb-1 font-semibold">Have an access code?</h3>
+                  <SimpleForm action={redeemAccessCode} submit="Apply code" pendingLabel="Checking…" variant="secondary" fields={[{ name: "code", label: "Access code", type: "password", autoComplete: "off" }]} />
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        </div>
       )}
 
       <SectionCard accent="violet" eyebrow="Every new ad starts with" title="Creative defaults">

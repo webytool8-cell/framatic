@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FallbackLLM, LLMOutputError, shouldFallBack, type StructuredLLM } from "@/lib/ai/llm";
 import { costForUsage, dbMeter, priceFor, renderCostUsd } from "@/lib/ai/usage";
-import { PLANS, monthlyUsage, monthStart, nextMonthStart } from "@/lib/plans";
-import { QuotaError, RateLimitError, checkMonthlyQuota } from "@/lib/rate-limit";
+import { CREDIT_COST, PLANS, creditBalance, creditPeriod, projectsPerMonth } from "@/lib/plans";
+import { OutOfCreditsError, RateLimitError, chargeCredits, refundLatestCharge, setChargeRef } from "@/lib/rate-limit";
 import { buildUsageReport } from "@/lib/usage-report";
 import { FakeDB } from "./fake-supabase";
 
@@ -61,61 +61,83 @@ describe("fast model with fallback", () => {
   });
 });
 
-describe("monthly quotas", () => {
-  const seed = (db: FakeDB, kind: string, n: number, at: string) => {
-    for (let i = 0; i < n; i++) db.table("usage_events").push({ id: db.table("usage_events").length + 1, user_id: "u1", kind, created_at: at });
-  };
+describe("credits", () => {
+  const spend = (db: FakeDB, kind: string, credits: number, at = "2026-11-03T00:00:00.000Z", ref: string | null = null) =>
+    db.table("usage_events").push({ id: db.table("usage_events").length + 1, user_id: "u1", kind, credits, ref, created_at: at });
 
-  it("uses calendar months in UTC", () => {
-    expect(monthStart(NOW).toISOString()).toBe("2026-11-01T00:00:00.000Z");
-    expect(nextMonthStart(NOW).toISOString()).toBe("2026-12-01T00:00:00.000Z");
+  it("refills on the 1st (UTC), or on the billing date once Stripe sets one", () => {
+    expect(creditPeriod(NOW)).toEqual({ start: new Date("2026-11-01T00:00:00Z"), end: new Date("2026-12-01T00:00:00Z") });
+    const anchor = new Date("2026-08-20T00:00:00Z");
+    expect(creditPeriod(NOW, anchor)).toEqual({ start: new Date("2026-10-20T00:00:00Z"), end: new Date("2026-11-20T00:00:00Z") });
+    expect(creditPeriod(new Date("2026-11-25T00:00:00Z"), anchor).start).toEqual(new Date("2026-11-20T00:00:00Z"));
+    // Billing on the 31st lands on the last day of shorter months.
+    expect(creditPeriod(new Date("2026-03-01T00:00:00Z"), new Date("2026-01-31T00:00:00Z")).start).toEqual(new Date("2026-02-28T00:00:00Z"));
   });
 
-  it("blocks the free plan after 3 product links this month, ignoring last month", async () => {
-    const db = new FakeDB();
-    seed(db, "analyze", 5, "2026-10-20T00:00:00.000Z");
-    seed(db, "analyze", 2, "2026-11-03T00:00:00.000Z");
-    await expect(checkMonthlyQuota(asDb(db), "u1", "analyze", NOW)).resolves.toBeUndefined();
-    seed(db, "analyze", 1, "2026-11-04T00:00:00.000Z");
-    const err = await checkMonthlyQuota(asDb(db), "u1", "analyze", NOW).catch((e) => e);
-    expect(err).toBeInstanceOf(QuotaError);
-    expect(err).toBeInstanceOf(RateLimitError); // routes answer it with 429
-    expect(err.message).toMatch(/all 3 product links on the Free plan.*December 1/);
+  it("every paid plan keeps a healthy margin at ~3¢ of AI per credit", () => {
+    for (const id of ["starter", "pro", "studio"] as const) {
+      const p = PLANS[id];
+      expect(p.credits * 0.03).toBeLessThan((p.priceYearlyPerMonth ?? 0) * 0.8);
+    }
+    expect(projectsPerMonth(PLANS.free.credits)).toBeGreaterThanOrEqual(1);
   });
 
-  it("counts regenerations and new concept sets together as AI edits", async () => {
+  it("charges credits, counts only this period and blocks when they run out", async () => {
     const db = new FakeDB();
-    seed(db, "generate", 10, "2026-11-02T00:00:00.000Z");
-    seed(db, "regenerate", PLANS.free.limits.edits - 10, "2026-11-02T00:00:00.000Z");
-    await expect(checkMonthlyQuota(asDb(db), "u1", "regenerate", NOW)).rejects.toBeInstanceOf(QuotaError);
-    await expect(checkMonthlyQuota(asDb(db), "u1", "render", NOW)).resolves.toBeUndefined();
+    spend(db, "analyze", 10, "2026-10-20T00:00:00.000Z"); // last month: ignored
+    spend(db, "analyze", 10);
+    spend(db, "regenerate", 2);
+    let b = await creditBalance(asDb(db), "u1", NOW);
+    expect(b).toMatchObject({ plan: "free", allowance: 30, used: 12, left: 18, unlimited: false });
+
+    await chargeCredits(asDb(db), "u1", "analyze", "p2", NOW);
+    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "analyze", credits: CREDIT_COST.analyze, ref: "p2" });
+    b = await creditBalance(asDb(db), "u1", NOW);
+    expect(b.left).toBe(8);
+
+    const err = await chargeCredits(asDb(db), "u1", "analyze", "p3", NOW).catch((e: Error) => e);
+    expect(err).toBeInstanceOf(OutOfCreditsError);
+    expect(err).toBeInstanceOf(RateLimitError); // routes answer with 429
+    expect((err as Error).message).toMatch(/uses 10 credits and you have 8 left on the Free plan.*December 1/);
+    await expect(chargeCredits(asDb(db), "u1", "render", "c1", NOW)).resolves.toBeTypeOf("string");
   });
 
-  it("respects paid plans, unlimited and the off switch", async () => {
+  it("refunds a failed job once, and the credits come back", async () => {
     const db = new FakeDB();
-    seed(db, "render", 10, "2026-11-02T00:00:00.000Z");
-    await expect(checkMonthlyQuota(asDb(db), "u1", "render", NOW)).rejects.toBeInstanceOf(QuotaError);
-    db.table("user_plans").push({ user_id: "u1", plan: "starter" });
-    await expect(checkMonthlyQuota(asDb(db), "u1", "render", NOW)).resolves.toBeUndefined();
+    spend(db, "analyze", 10, "2026-11-03T00:00:00.000Z", "p1");
+    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(20);
+    expect(await refundLatestCharge(asDb(db), "u1", "p1", "test")).toBe(10);
+    expect(await refundLatestCharge(asDb(db), "u1", "p1", "again")).toBe(0);
+    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(30);
+    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "refund", credits: -10 });
+    // A retry is a new charge and can be refunded on its own.
+    spend(db, "analyze", 10, "2026-11-04T00:00:00.000Z", "p1");
+    expect(await refundLatestCharge(asDb(db), "u1", "p1", "retry failed")).toBe(10);
+  });
+
+  it("tags a charge after the fact so exports can refund themselves", async () => {
+    const db = new FakeDB();
+    const id = await chargeCredits(asDb(db), "u1", "render", "c1", NOW);
+    await setChargeRef(asDb(db), id as unknown as number, "render:r1");
+    expect(await refundLatestCharge(asDb(db), "u1", "render:r1", "render failed")).toBe(1);
+  });
+
+  it("paid plans get their allowance; unlimited and the off switch charge nothing", async () => {
+    const db = new FakeDB();
+    spend(db, "analyze", 30);
+    await expect(chargeCredits(asDb(db), "u1", "render", null, NOW)).rejects.toBeInstanceOf(OutOfCreditsError);
+    db.table("user_plans").push({ user_id: "u1", plan: "pro" });
+    expect((await creditBalance(asDb(db), "u1", NOW)).left).toBe(970);
     db.table("user_plans")[0].plan = "unlimited";
-    seed(db, "render", 500, "2026-11-02T00:00:00.000Z");
-    await expect(checkMonthlyQuota(asDb(db), "u1", "render", NOW)).resolves.toBeUndefined();
+    await chargeCredits(asDb(db), "u1", "analyze", null, NOW);
+    expect(db.table("usage_events").at(-1)).toMatchObject({ kind: "analyze", credits: 0 });
+    const b = await creditBalance(asDb(db), "u1", NOW);
+    expect(b.unlimited).toBe(true);
+    expect(b.left).toBe(Infinity);
     db.table("user_plans")[0].plan = "free";
     process.env.FRAMATIC_QUOTAS = "off";
-    await expect(checkMonthlyQuota(asDb(db), "u1", "render", NOW)).resolves.toBeUndefined();
-  });
-
-  it("reports usage per meter for the Settings page", async () => {
-    const db = new FakeDB();
-    seed(db, "analyze", 2, "2026-11-02T00:00:00.000Z");
-    seed(db, "regenerate", 4, "2026-11-02T00:00:00.000Z");
-    const u = await monthlyUsage(asDb(db), "u1", NOW);
-    expect(u.plan).toBe("free");
-    expect(u.meters).toEqual([
-      { meter: "projects", used: 2, limit: 3 },
-      { meter: "edits", used: 4, limit: 30 },
-      { meter: "exports", used: 0, limit: 3 },
-    ]);
+    await chargeCredits(asDb(db), "u1", "analyze", null, NOW);
+    expect(db.table("usage_events").at(-1)).toMatchObject({ credits: 0 });
   });
 });
 

@@ -18,7 +18,7 @@ import { finalizeConcept } from "@/lib/creative/director";
 import type { SiteAnalysis } from "@/lib/analyzer/crawl";
 import { aiBrandFixture, aiConceptFixture, HOME } from "@/lib/dev/sample-data";
 import { samplePlan } from "@/lib/samples";
-import { PlanUsage } from "@/components/app/plan-usage";
+import { CreditsCard } from "@/components/app/credits-card";
 import { SectionCard } from "@/components/ui/card";
 
 /**
@@ -55,13 +55,21 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="min-h-dvh bg-[#FAFAFC]">
-      <Sidebar email="preview@framatic.dev" projects={[{ id: "demo", name: "Tidyflow launch", status: "concepts_ready", color: "#14B88A" }, { id: "b", name: "Brightmug store", status: "generating", color: "#FF6B6B" }, { id: "c", name: "Agency pitch", status: "analysis_failed", color: null }]} />
+      <Sidebar email="preview@framatic.dev" projects={[{ id: "demo", name: "Tidyflow launch", status: "concepts_ready", color: "#14B88A" }, { id: "b", name: "Brightmug store", status: "generating", color: "#FF6B6B" }, { id: "c", name: "Agency pitch", status: "analysis_failed", color: null }]} credits={{ left: 6, allowance: 30, unlimited: false }} />
       <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6"><div className="mx-auto max-w-[1400px]">
         
         {view === "usage" && (
           <div className="max-w-3xl space-y-5">
-            <SectionCard accent="cyan" eyebrow="This month" title="Plan & usage">
-              <PlanUsage plan="free" resetsAt={new Date("2026-12-01T00:00:00Z")} meters={[{ meter: "projects", used: 2, limit: 3 }, { meter: "edits", used: 12, limit: 30 }, { meter: "exports", used: 3, limit: 3 }]} />
+            <SectionCard accent="cyan" eyebrow="This month" title="Plan & credits">
+              <CreditsCard
+                balance={{ plan: "free", allowance: 30, used: 24, left: 6, unlimited: false, periodStart: new Date("2026-11-01T00:00:00Z"), resetsAt: new Date("2026-12-01T00:00:00Z") }}
+                activity={[
+                  { id: 1, kind: "render", credits: 1, created_at: "2026-11-02T10:00:00Z" },
+                  { id: 2, kind: "regenerate", credits: 2, created_at: "2026-11-02T09:40:00Z" },
+                  { id: 3, kind: "refund", credits: -10, created_at: "2026-11-01T16:00:00Z" },
+                  { id: 4, kind: "analyze", credits: 10, created_at: "2026-11-01T15:58:00Z" },
+                ]}
+              />
             </SectionCard>
             <JobRunner projectId="demo" kind="autopilot" status="generating" message="Writing three ad concepts…" label="" compact />
           </div>

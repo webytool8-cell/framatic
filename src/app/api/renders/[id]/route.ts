@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { RENDER_BUCKET } from "@/lib/render/cloudrun";
+import { refundLatestCharge } from "@/lib/rate-limit";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       const { data } = await supabase.from("renders").update({ status: "failed", error: "The render stopped responding. Please try again." }).eq("id", id).eq("user_id", user.id).select("*").single();
       if (data) row = data;
     }
+
+    // A failed export gives its credit back (once: refunds are idempotent per charge).
+    if (row.status === "failed") await refundLatestCharge(createServiceClient(), user.id, `render:${id}`, "render failed");
 
     let downloadUrl: string | null = null;
     if (row.status === "done" && row.out_key) {

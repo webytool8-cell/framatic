@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeLLMError, getLLM } from "@/lib/ai/llm";
 import { dbMeter } from "@/lib/ai/usage";
+import { refundLatestCharge } from "@/lib/rate-limit";
 import { CONCEPT_KINDS, CONCEPT_META, CreativePreferences, REGENERATABLE_FIELDS, mergeConcept, type ConceptKind, type RegeneratableField } from "@/lib/creative/concept";
 import { preferencesFromInstruction } from "@/lib/brief";
 import { generateConcept } from "@/lib/creative/director";
@@ -70,6 +71,7 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
     const message = e instanceof UserFacingError ? e.message : friendly(e);
     log.error("generate all failed", { projectId, error: (e as Error).message });
     await setProjectStatus(db, userId, projectId, "generation_failed", message);
+    await refundLatestCharge(db, userId, projectId, "concept generation failed");
   }
 }
 

@@ -5,6 +5,7 @@ import { mergeReanalysis } from "@/lib/brand/merge";
 import { BrandProfileSchema, CampaignObjective, type BrandProfile } from "@/lib/brand/schema";
 import { describeLLMError, getLLM, isLLMConfigured } from "@/lib/ai/llm";
 import { dbMeter } from "@/lib/ai/usage";
+import { refundLatestCharge } from "@/lib/rate-limit";
 import { getBrandProfile, getProject, setProjectStatus } from "@/lib/db/repo";
 import { log } from "@/lib/log";
 
@@ -17,6 +18,7 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
   const project = await getProject(db, userId, projectId);
   if (!project?.website_url) {
     await setProjectStatus(db, userId, projectId, "analysis_failed", "This project has no link. Add one or enter your product details manually.");
+    await refundLatestCharge(db, userId, projectId, "analysis failed");
     return;
   }
 
@@ -28,6 +30,7 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
     const userMessage = e instanceof CrawlError ? e.userMessage : "Something went wrong while reading the page.";
     log.warn("crawl failed", { projectId, error: (e as Error).message });
     await setProjectStatus(db, userId, projectId, "analysis_failed", `${userMessage} You can try again or fill in your brand details manually.`);
+    await refundLatestCharge(db, userId, projectId, "analysis failed");
     return;
   }
 
@@ -85,6 +88,7 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
   } catch (e) {
     log.error("analysis failed", { projectId, error: (e as Error).message });
     await setProjectStatus(db, userId, projectId, "analysis_failed", "We couldn't finish the analysis. Please try again, or fill in your brand details manually.");
+    await refundLatestCharge(db, userId, projectId, "analysis failed");
   }
 }
 

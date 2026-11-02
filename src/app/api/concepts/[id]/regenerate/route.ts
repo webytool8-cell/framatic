@@ -4,7 +4,7 @@ import { handleRouteError, jsonError, routeUser } from "@/lib/api";
 import { REGENERATABLE_FIELDS } from "@/lib/creative/concept";
 import { getConcept } from "@/lib/db/repo";
 import { regenerateConcept } from "@/lib/jobs/concepts";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { consumeRateLimit, refundLatestCharge } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export const maxDuration = 180;
@@ -26,8 +26,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (concept.status === "regenerating") return jsonError("This concept is already regenerating.", 409);
 
     const admin = createServiceClient();
-    await consumeRateLimit(admin, user.id, "regenerate");
-    const changed = await regenerateConcept(admin, user.id, id, { only: body.data.fields, instruction: body.data.instruction });
+    await consumeRateLimit(admin, user.id, "regenerate", id);
+    let changed;
+    try {
+      changed = await regenerateConcept(admin, user.id, id, { only: body.data.fields, instruction: body.data.instruction });
+    } catch (e) {
+      await refundLatestCharge(admin, user.id, id, "regenerate failed");
+      throw e;
+    }
     return NextResponse.json({ changed });
   } catch (e) {
     return handleRouteError(e, "regenerate");

@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { HeroStage, PlatformStrip } from "@/components/landing/hero-stage";
 import { AdGallery } from "@/components/landing/ad-gallery";
 import { ScenePreview } from "@/components/app/scene-preview";
-import { Logo } from "@/components/ui/shapes";
+import { SiteFooter, SiteHeader } from "@/components/landing/site-chrome";
 import { Tag } from "@/components/ui/status";
 import { sampleVerticalPlan } from "@/lib/samples";
 import { MusicTeaser } from "@/components/landing/music-teaser";
@@ -47,23 +46,7 @@ function SectionHead({ kicker, title, body, light = false }: { kicker: string; t
 export default function Landing() {
   return (
     <div className="min-h-dvh overflow-x-clip bg-white">
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-5 sm:px-8">
-          <div className="flex items-center gap-8">
-            <Logo />
-            <nav className="hidden items-center gap-1 text-sm text-slate md:flex">
-              <a href="#examples" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Examples</a>
-              <a href="#how" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">How it works</a>
-              <a href="#features" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Features</a>
-              <a href="#sound" className="rounded-md px-3 py-1.5 hover:bg-lavender hover:text-ink">Music</a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <Link href="/login" className="rounded-lg px-3 py-2 hover:bg-lavender">Sign in</Link>
-            <Link href="/signup" className="rounded-lg bg-ink px-4 py-2 text-white hover:bg-black">Create account</Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* 1 · Hero */}
       <Band id="start" tone="hero">
@@ -240,12 +223,7 @@ export default function Landing() {
         </div>
       </Band>
 
-      <footer className="bg-white">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-10 text-sm text-slate sm:px-8">
-          <Logo mono />
-          <p>© {new Date().getFullYear()} Framatic</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
