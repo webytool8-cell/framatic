@@ -68,7 +68,21 @@ jobs:
         run: |
           IMAGE="$REGION-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/$REPO/renderer:${GITHUB_SHA::12}"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          gcloud builds submit --config renderer/cloudbuild.yaml --substitutions=_IMAGE="$IMAGE" --suppress-logs .
+          # Submit without streaming logs (streaming needs project Viewer),
+          # then poll the build status, which Cloud Build Editor can read.
+          BUILD_ID=$(gcloud builds submit --config renderer/cloudbuild.yaml --substitutions=_IMAGE="$IMAGE" --async --format='value(id)' .)
+          echo "Cloud Build: https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=${{ secrets.GCP_PROJECT_ID }}"
+          while true; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --format='value(status)')
+            case "$STATUS" in
+              SUCCESS) echo "Build succeeded"; break ;;
+              FAILURE|INTERNAL_ERROR|TIMEOUT|CANCELLED|EXPIRED)
+                echo "::error::Cloud Build finished with status $STATUS. Open the Cloud Build link above for the log."
+                gcloud builds describe "$BUILD_ID" --format='value(failureInfo.detail)' || true
+                exit 1 ;;
+              *) echo "Build status: $STATUS"; sleep 20 ;;
+            esac
+          done
 
       - name: Deploy Cloud Run job
         if: steps.cfg.outputs.ready == 'true'
