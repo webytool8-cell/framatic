@@ -2,6 +2,9 @@
 grant usage on schema public, auth, storage to authenticated, anon;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
+-- Supabase grants new tables to API roles on creation and migrations then revoke;
+-- the blanket grant above runs later, so re-apply the migration's revoke.
+revoke all on public.usage_cost_monthly from anon, authenticated;
 grant select, insert, update, delete on storage.objects to authenticated;
 
 insert into auth.users (id, email) values
@@ -99,6 +102,36 @@ insert into public.renders (project_id, user_id, concept_id, scene_plan_version,
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
 do $$ begin
   if (select count(*) from public.renders) <> 0 then raise exception 'bob can see alice renders'; end if;
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+
+-- Plans: readable by their owner only, never writable by users
+reset role;
+insert into public.user_plans (user_id, plan) values ('00000000-0000-0000-0000-00000000000a', 'pro');
+insert into public.ai_usage (user_id, step, model, input_tokens, output_tokens, cost_usd) values ('00000000-0000-0000-0000-00000000000a', 'analysis', 'claude-haiku-5-5', 9000, 1500, 0.00165);
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+do $$ begin
+  if (select plan from public.user_plans) <> 'pro' then raise exception 'alice cannot read her plan'; end if;
+  update public.user_plans set plan = 'unlimited';
+  if (select plan from public.user_plans) <> 'pro' then raise exception 'alice changed her own plan'; end if;
+  begin
+    insert into public.user_plans (user_id, plan) values ('00000000-0000-0000-0000-00000000000a', 'unlimited');
+    raise exception 'alice inserted a plan';
+  exception when insufficient_privilege or unique_violation then null; end;
+  if (select count(*) from public.ai_usage) <> 0 then raise exception 'users can read ai_usage'; end if;
+  begin
+    insert into public.ai_usage (user_id, step, model) values ('00000000-0000-0000-0000-00000000000a', 'x', 'y');
+    raise exception 'users can write ai_usage';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform * from public.usage_cost_monthly;
+    raise exception 'users can read the cost view';
+  exception when insufficient_privilege then null; end;
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+do $$ begin
+  if (select count(*) from public.user_plans) <> 0 then raise exception 'bob can see alice plan'; end if;
 end $$;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 

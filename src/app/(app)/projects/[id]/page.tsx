@@ -17,8 +17,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const { status, message } = effectiveStatus(project);
   const aiReady = isLLMConfigured();
 
+  const [concepts, brand] = await Promise.all([
+    listConcepts(supabase, user.id, id),
+    project.brand_profile_id ? getBrandProfile(supabase, user.id, project.brand_profile_id) : null,
+  ]);
+  const generating = status === "generating";
+  // While writing, show concepts as they land (first-time generation only).
+  const streaming = generating && concepts.length > 0 && concepts.length < 3;
+
   // 1. Working on it
-  if (status === "analyzing" || status === "generating" || (status === "draft" && project.website_url)) {
+  if (status === "analyzing" || (generating && !streaming && concepts.length === 0) || (status === "draft" && project.website_url)) {
     return (
       <div className="mx-auto max-w-2xl">
         <JobRunner projectId={id} kind="autopilot" status={status} message={message} label="Make my ad concepts" />
@@ -41,10 +49,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const [concepts, brand] = await Promise.all([
-    listConcepts(supabase, user.id, id),
-    project.brand_profile_id ? getBrandProfile(supabase, user.id, project.brand_profile_id) : null,
-  ]);
   const warnings = (project.analysis_warnings ?? []) as string[];
 
   // 3. Brand ready, no concepts yet (AI not configured, or generation failed)
@@ -76,9 +80,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <h2 className="text-heading text-lg">3 concepts</h2>
           <p className="text-sm text-slate">Open one to tweak it. Frames are storyboard sketches, not rendered video.</p>
         </div>
-        {aiReady && <JobRunner projectId={id} kind="generate" status={status} label="Try three new ones" variant="secondary" />}
+        {aiReady && !streaming && <JobRunner projectId={id} kind="generate" status={status} label="Try three new ones" variant="secondary" />}
       </div>
-      {message && <Alert tone={status === "generation_failed" ? "error" : "warning"}>{message}</Alert>}
+      {streaming && <JobRunner projectId={id} kind="autopilot" status={status} message={message} label="" compact />}
+      {message && !generating && <Alert tone={status === "generation_failed" ? "error" : "warning"}>{message}</Alert>}
       {warnings.length > 0 && (
         <Alert tone="warning">
           <ul className="list-disc space-y-1 pl-4">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
@@ -97,6 +102,15 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             logoUrl={brand?.profile.identity.logoUrl}
           />
         ))}
+        {streaming &&
+          Array.from({ length: 3 - concepts.length }, (_, i) => (
+            <div key={i} aria-hidden className="flex min-h-[320px] flex-col justify-end gap-2 rounded-[var(--radius-card)] border-[1.5px] border-dashed border-line-strong bg-[#FAFAFC] p-5">
+              <div className="mb-auto aspect-video w-full animate-pulse rounded-xl bg-[#F0F0F5]" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-[#ECECF2]" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-[#F0F0F5]" />
+              <p className="mt-1 text-xs font-medium text-slate">Writing this concept…</p>
+            </div>
+          ))}
       </div>
       <p className="text-xs text-slate">“Try three new ones” keeps any lines you&apos;ve edited yourself.</p>
     </div>

@@ -25,6 +25,7 @@ export function JobRunner({
   autoStart = false,
   label,
   variant = "primary",
+  compact = false,
 }: {
   projectId: string;
   kind: Kind;
@@ -33,6 +34,8 @@ export function JobRunner({
   autoStart?: boolean;
   label: string;
   variant?: "primary" | "secondary";
+  /** Slim progress bar instead of the full step list (used once results are showing). */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [running, setRunning] = useState(RUNNING[kind].includes(status));
@@ -42,6 +45,7 @@ export function JobRunner({
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const started = useRef(false);
+  const conceptsSeen = useRef<string | null>(null);
 
   const start = useCallback(async () => {
     setError(null);
@@ -73,8 +77,13 @@ export function JobRunner({
       setTick(polls.current);
       const res = await fetch(`/api/projects/${projectId}/status`, { cache: "no-store" }).catch(() => null);
       if (!alive || !res?.ok) return;
-      const s = (await res.json()) as { status: ProjectStatus; message: string | null };
+      const s = (await res.json()) as { status: ProjectStatus; message: string | null; concepts?: string };
       setLiveMessage(s.message);
+      // Show each concept as soon as it's saved, not only when all three are done.
+      if (s.concepts !== undefined) {
+        if (conceptsSeen.current !== null && conceptsSeen.current !== s.concepts && RUNNING[kind].includes(s.status)) router.refresh();
+        conceptsSeen.current = s.concepts;
+      }
       if (!RUNNING[kind].includes(s.status)) {
         setPolling(false);
         setRunning(false);
@@ -86,6 +95,20 @@ export function JobRunner({
       clearInterval(iv);
     };
   }, [polling, projectId, kind, router]);
+
+  if (running && compact) {
+    return (
+      <div role="status" aria-live="polite" className="relative flex items-center gap-3 overflow-hidden rounded-xl border-[1.5px] border-cyan bg-white px-4 py-3">
+        <span aria-hidden className="relative h-6 w-6 shrink-0">
+          <Ring className="absolute inset-0 animate-spin-slow" color="#39C6E8" stroke={12} />
+        </span>
+        <p className="text-sm"><span className="font-semibold">{liveMessage ?? "Writing your ad concepts…"}</span> <span className="text-slate">Each concept appears here as soon as it&apos;s ready.</span></p>
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-ice">
+          <div className="h-full w-1/3 animate-scan bg-gradient-to-r from-cyan via-violet to-coral" />
+        </div>
+      </div>
+    );
+  }
 
   if (running) {
     const generatingNow = kind === "autopilot" && /concept|direction|Writing/i.test(liveMessage ?? "");
@@ -99,7 +122,7 @@ export function JobRunner({
           </span>
           <div>
             <p className="text-heading text-xl">{TITLE[kind]}</p>
-            <p className="text-sm text-slate">{liveMessage ?? "Working…"} {kind === "autopilot" ? "About a minute. You can leave this page; we'll keep going." : "This usually takes under a minute."}</p>
+            <p className="text-sm text-slate">{liveMessage ?? "Working…"} {kind === "autopilot" ? "Usually 1–2 minutes, and each concept shows up as soon as it's ready. You can leave this page; we'll keep going." : "Usually about a minute. Each concept shows up as soon as it's ready."}</p>
           </div>
         </div>
         <ol className="space-y-2">

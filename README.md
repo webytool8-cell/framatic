@@ -69,7 +69,8 @@ Every table has RLS restricted to `auth.uid()`. Triggers also stop child rows fr
 2. Create a Supabase project. In the SQL editor (or with `supabase db push`) run `supabase/migrations/20261101000000_init.sql`.
 3. `cp .env.example .env.local` and fill in:
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-   - `ANTHROPIC_API_KEY` (and optionally `FRAMATIC_LLM_MODEL`)
+   - `ANTHROPIC_API_KEY` (and optionally `FRAMATIC_LLM_MODEL` for concepts, `FRAMATIC_ANALYSIS_MODEL` for page reading)
+   - `FRAMATIC_ADMIN_EMAILS`: your email, to open `/admin/usage` (real cost per project, export and user)
    - `NEXT_PUBLIC_SITE_URL`
 4. In Supabase → Authentication → URL configuration, set **Site URL** to your site and add `<site-url>/**` under **Redirect URLs** (covers sign-up confirmation, password reset, email change and Google sign-in).
 5. `npm run dev` and open http://localhost:3000.

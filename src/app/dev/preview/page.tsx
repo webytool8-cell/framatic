@@ -18,6 +18,8 @@ import { finalizeConcept } from "@/lib/creative/director";
 import type { SiteAnalysis } from "@/lib/analyzer/crawl";
 import { aiBrandFixture, aiConceptFixture, HOME } from "@/lib/dev/sample-data";
 import { samplePlan } from "@/lib/samples";
+import { PlanUsage } from "@/components/app/plan-usage";
+import { SectionCard } from "@/components/ui/card";
 
 /**
  * Development-only visual preview of authenticated screens using fictional
@@ -56,6 +58,14 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
       <Sidebar email="preview@framatic.dev" projects={[{ id: "demo", name: "Tidyflow launch", status: "concepts_ready", color: "#14B88A" }, { id: "b", name: "Brightmug store", status: "generating", color: "#FF6B6B" }, { id: "c", name: "Agency pitch", status: "analysis_failed", color: null }]} />
       <main className="px-4 pb-20 pt-5 sm:px-6 lg:ml-60 lg:px-8 lg:pt-6"><div className="mx-auto max-w-[1400px]">
         
+        {view === "usage" && (
+          <div className="max-w-3xl space-y-5">
+            <SectionCard accent="cyan" eyebrow="This month" title="Plan & usage">
+              <PlanUsage plan="free" resetsAt={new Date("2026-12-01T00:00:00Z")} meters={[{ meter: "projects", used: 2, limit: 3 }, { meter: "edits", used: 12, limit: 30 }, { meter: "exports", used: 3, limit: 3 }]} />
+            </SectionCard>
+            <JobRunner projectId="demo" kind="autopilot" status="generating" message="Writing three ad concepts…" label="" compact />
+          </div>
+        )}
         {view === "music" && <div className="max-w-5xl space-y-5"><h1 className="text-heading text-2xl">Music library</h1><MusicLibrary /></div>}
         {view === "running" && <div className="mx-auto max-w-2xl"><JobRunner projectId="demo" kind="autopilot" status="analyzing" message="Reading your website…" label="" /></div>}
         {view === "dashboard" && (

@@ -101,7 +101,7 @@ export default function Landing() {
           {[
             ["Paste a product link", "A store, a product page or your app. Add an offer or goal if you have one.", "bg-cyan text-ink"],
             ["Sign in", "So we can save your brand, products, concepts and videos.", "bg-yellow text-ink"],
-            ["Get 3 ad concepts", "Hooks, scripts, storyboards and music in about a minute.", "bg-coral text-white"],
+            ["Get 3 ad concepts", "Hooks, scripts, storyboards and music in a minute or two.", "bg-coral text-white"],
             ["Tweak & post", "Ask for changes in plain words, export the MP4 and run it.", "bg-lime text-ink"],
           ].map(([t, b, c], i) => (
             <li key={t} className="rounded-2xl bg-white/10 p-6 ring-1 ring-white/20 backdrop-blur">
@@ -234,7 +234,7 @@ export default function Landing() {
           <div className="max-w-2xl">
             <p className="mb-3 text-sm font-semibold text-lime">Ready when you are</p>
             <h2 className="text-display text-[clamp(2.4rem,5vw,4rem)]">What would your product&apos;s ad look like?</h2>
-            <p className="mt-4 text-lg text-white/75">Find out in about a minute. All it takes is a link to what you sell.</p>
+            <p className="mt-4 text-lg text-white/75">Find out in a couple of minutes. All it takes is a link to what you sell.</p>
           </div>
           <a href="#start" className="rounded-xl bg-lime px-6 py-4 text-lg font-semibold text-ink transition-transform hover:-translate-y-0.5">Paste a product link</a>
         </div>

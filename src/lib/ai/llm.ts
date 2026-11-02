@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { log } from "@/lib/log";
+import { costForUsage, type UsageMeter } from "./usage";
 
 /**
  * Provider-agnostic structured generation. Every response is validated with
@@ -55,6 +56,7 @@ export class AnthropicLLM implements StructuredLLM {
     apiKey: string,
     private model: string,
     private maxValidationRetries = 2,
+    private meter?: UsageMeter,
   ) {
     this.client = new Anthropic({ apiKey, maxRetries: 3, timeout: 120_000 });
   }
@@ -69,6 +71,7 @@ export class AnthropicLLM implements StructuredLLM {
     let lastIssues: string[] = [];
 
     for (let attempt = 0; attempt <= this.maxValidationRetries; attempt++) {
+      const t0 = Date.now();
       const res = await this.client.messages.create({
         model: this.model,
         max_tokens: req.maxTokens ?? 8000,
@@ -78,8 +81,20 @@ export class AnthropicLLM implements StructuredLLM {
         messages,
       });
       const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
-      if (!block) throw new LLMOutputError("The AI did not return structured output.");
-      const parsed = req.schema.safeParse(block.input);
+      const parsed = block ? req.schema.safeParse(block.input) : null;
+      await this.meter?.({
+        model: res.model || this.model,
+        tool: req.toolName,
+        attempt,
+        inputTokens: res.usage?.input_tokens ?? 0,
+        outputTokens: res.usage?.output_tokens ?? 0,
+        cacheReadTokens: res.usage?.cache_read_input_tokens ?? 0,
+        cacheWriteTokens: res.usage?.cache_creation_input_tokens ?? 0,
+        costUsd: costForUsage(res.model || this.model, res.usage),
+        durationMs: Date.now() - t0,
+        ok: !!parsed?.success,
+      });
+      if (!block || !parsed) throw new LLMOutputError("The AI did not return structured output.");
       if (parsed.success) return parsed.data;
 
       lastIssues = formatIssues(parsed.error);
@@ -115,11 +130,55 @@ export function isLLMConfigured(): boolean {
   return !!override || !!process.env.ANTHROPIC_API_KEY;
 }
 
-export function getLLM(): StructuredLLM {
+/**
+ * "creative" writes the ad concepts (quality matters most). "analysis" reads
+ * the product pages into a brand profile: a smaller, faster model does this
+ * well, with the creative model as a fallback if its answer doesn't validate.
+ */
+export type LLMRole = "analysis" | "creative";
+
+export function creativeModel(): string {
+  return process.env.FRAMATIC_LLM_MODEL || "claude-sonnet-5-5";
+}
+export function analysisModel(): string {
+  return process.env.FRAMATIC_ANALYSIS_MODEL || "claude-haiku-5-5";
+}
+
+export function getLLM(role: LLMRole = "creative", meter?: UsageMeter): StructuredLLM {
   if (override) return override;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new LLMNotConfiguredError();
-  return new AnthropicLLM(key, process.env.FRAMATIC_LLM_MODEL || "claude-sonnet-5-5");
+  const creative = new AnthropicLLM(key, creativeModel(), 2, meter);
+  if (role === "creative" || analysisModel() === creativeModel()) return creative;
+  return new FallbackLLM(new AnthropicLLM(key, analysisModel(), 1, meter), creative);
+}
+
+/** Should a failure of the fast model be retried on the main model? */
+export function shouldFallBack(e: unknown): boolean {
+  const err = e as { name?: string; status?: number; message?: string };
+  if (err?.name === "LLMOutputError") return true; // invalid or cut-off structured output
+  if (err?.status === 404) return true; // model not available to this account
+  return err?.status === 400 && /model/i.test(err.message ?? "");
+}
+
+/** Try a primary model; on bad output or an unavailable model, use the secondary. */
+export class FallbackLLM implements StructuredLLM {
+  readonly name: string;
+  constructor(
+    private primary: StructuredLLM,
+    private secondary: StructuredLLM,
+  ) {
+    this.name = `${primary.name}→${secondary.name}`;
+  }
+  async generate<T>(req: StructuredRequest<T>): Promise<T> {
+    try {
+      return await this.primary.generate(req);
+    } catch (e) {
+      if (!shouldFallBack(e)) throw e;
+      log.warn("fast model failed, falling back", { tool: req.toolName, error: (e as Error).message });
+      return this.secondary.generate(req);
+    }
+  }
 }
 
 /**
@@ -138,7 +197,7 @@ export function describeLLMError(e: unknown): string {
   if (status === 401) return "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in Vercel (no spaces or quotes), then redeploy.";
   if (status === 403) return "The Anthropic API key doesn't have permission for this request. Check the key's workspace in console.anthropic.com.";
   if (status === 404 || /model/i.test(detail) && /not.?found|does not exist|invalid/i.test(detail)) {
-    return `The AI model "${process.env.FRAMATIC_LLM_MODEL || "claude-sonnet-5-5"}" isn't available to your Anthropic account. Remove FRAMATIC_LLM_MODEL in Vercel or set it to a model your account can use.`;
+    return `The AI model "${creativeModel()}" isn't available to your Anthropic account. Remove FRAMATIC_LLM_MODEL in Vercel or set it to a model your account can use.`;
   }
   if (status === 429) return "The AI service is rate-limiting this account right now. Wait a minute and try again.";
   if (status === 529 || (status && status >= 500)) return "The AI service is temporarily unavailable. Please try again in a minute.";

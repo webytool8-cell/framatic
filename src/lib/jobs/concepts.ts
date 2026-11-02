@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeLLMError, getLLM } from "@/lib/ai/llm";
+import { dbMeter } from "@/lib/ai/usage";
 import { CONCEPT_KINDS, CONCEPT_META, CreativePreferences, REGENERATABLE_FIELDS, mergeConcept, type ConceptKind, type RegeneratableField } from "@/lib/creative/concept";
 import { preferencesFromInstruction } from "@/lib/brief";
 import { generateConcept } from "@/lib/creative/director";
@@ -27,7 +28,6 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
     if (!project?.brand_profile_id) throw new UserFacingError("Analyze the link or complete the brand profile first.");
     const brand = await getBrandProfile(db, userId, project.brand_profile_id);
     if (!brand) throw new UserFacingError("The brand profile for this project is missing.");
-    const llm = getLLM();
     const prefs = await resolvePreferences(db, userId, project.creative_preferences);
     const existing = await listConcepts(db, userId, projectId);
 
@@ -35,6 +35,7 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
       CONCEPT_KINDS.map(async (kind) => {
         const current = existing.find((c) => c.kind === kind);
         const conceptPrefs = current ? CreativePreferences.parse({ ...prefs, ...current.preferences }) : prefs;
+        const llm = getLLM("creative", dbMeter({ db, userId, projectId, conceptId: current?.id, step: `concept:${kind}` }));
         const fresh = await generateConcept(llm, {
           kind,
           brand: brand.profile,
@@ -124,7 +125,9 @@ export async function regenerateConcept(
     if (Object.keys(hinted).length) {
       await db.from("creative_concepts").update({ preferences: { ...concept.preferences, ...hinted } }).eq("id", conceptId).eq("user_id", userId);
     }
-    const fresh = await generateConcept(getLLM(), {
+    const step = instruction ? "edit" : only?.length ? "rewrite_fields" : "regenerate";
+    const llm = getLLM("creative", dbMeter({ db, userId, projectId: concept.project_id, conceptId, step }));
+    const fresh = await generateConcept(llm, {
       kind: concept.kind,
       brand: brand.profile,
       preferences: prefs,

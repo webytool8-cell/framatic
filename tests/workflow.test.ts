@@ -118,6 +118,8 @@ describe("end-to-end workflow (website → brand → concepts → refine)", () =
   });
 
   it("enforces per-user rate limits", async () => {
+    // Hourly limit only: an unlimited plan has no monthly allowance (quotas are tested in usage.test.ts).
+    fake.table("user_plans").push({ user_id: USER, plan: "unlimited" });
     for (let i = 0; i < 10; i++) await consumeRateLimit(db, USER, "analyze");
     await expect(consumeRateLimit(db, USER, "analyze")).rejects.toBeInstanceOf(RateLimitError);
     await expect(consumeRateLimit(db, "someone-else", "analyze")).resolves.toBeUndefined();

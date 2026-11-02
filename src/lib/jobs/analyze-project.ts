@@ -4,6 +4,7 @@ import { buildBrandProfile, extractionOnlyProfile } from "@/lib/brand/intelligen
 import { mergeReanalysis } from "@/lib/brand/merge";
 import { BrandProfileSchema, CampaignObjective, type BrandProfile } from "@/lib/brand/schema";
 import { describeLLMError, getLLM, isLLMConfigured } from "@/lib/ai/llm";
+import { dbMeter } from "@/lib/ai/usage";
 import { getBrandProfile, getProject, setProjectStatus } from "@/lib/db/repo";
 import { log } from "@/lib/log";
 
@@ -38,7 +39,7 @@ export async function analyzeProject(db: SupabaseClient, userId: string, project
     let profile: BrandProfile;
     if (isLLMConfigured()) {
       try {
-        profile = await buildBrandProfile(site, getLLM());
+        profile = await buildBrandProfile(site, getLLM("analysis", dbMeter({ db, userId, projectId, step: "analysis" })));
       } catch (e) {
         log.error("brand intelligence failed", { projectId, error: (e as Error).message });
         profile = extractionOnlyProfile(site);

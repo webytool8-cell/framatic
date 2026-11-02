@@ -3,6 +3,10 @@ import { SettingsForm } from "@/components/app/settings-form";
 import { SimpleForm } from "@/components/app/simple-form";
 import { changeEmail, changePassword, deleteAccount } from "@/app/actions/account";
 import { requireUser } from "@/lib/supabase/server";
+import { PlanUsage } from "@/components/app/plan-usage";
+import { monthlyUsage } from "@/lib/plans";
+import { isAdminEmail } from "@/lib/admin";
+import Link from "next/link";
 
 export const metadata = { title: "Settings" };
 
@@ -10,12 +14,24 @@ export default async function Settings() {
   const { supabase, user } = await requireUser();
   const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
   const viaGoogle = user.app_metadata?.provider === "google";
+  const usage = await monthlyUsage(supabase, user.id).catch(() => null);
   return (
     <div className="max-w-3xl space-y-8">
       <div>
         <h1 className="text-heading text-2xl">Settings</h1>
-        <p className="text-sm text-slate">Creative defaults for new ads, and your account.</p>
+        <p className="text-sm text-slate">Your plan, creative defaults for new ads, and your account.</p>
       </div>
+
+      {usage && (
+        <SectionCard
+          accent="cyan"
+          eyebrow="This month"
+          title="Plan & usage"
+          action={isAdminEmail(user.email) ? <Link href="/admin/usage" className="text-sm font-semibold text-violet-deep hover:underline">Usage & cost for all users →</Link> : undefined}
+        >
+          <PlanUsage plan={usage.plan} meters={usage.meters} resetsAt={usage.resetsAt} />
+        </SectionCard>
+      )}
 
       <SectionCard accent="violet" eyebrow="Every new ad starts with" title="Creative defaults">
         <SettingsForm initial={{ default_aspect_ratio: data?.default_aspect_ratio ?? "16:9", default_duration_sec: data?.default_duration_sec ?? 30, default_pacing: data?.default_pacing ?? null, brand_voice_notes: data?.brand_voice_notes ?? "" }} />

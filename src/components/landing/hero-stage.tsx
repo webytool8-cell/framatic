@@ -62,7 +62,7 @@ export function HeroStage({ children }: { children: React.ReactNode }) {
         </div>
 
         <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate">
-          {["Free to try, no credit card", "Ads in about a minute", "Built for Reels, TikTok & YouTube"].map((t) => (
+          {["Free to try, no credit card", "Three ads in about 2 minutes", "Built for Reels, TikTok & YouTube"].map((t) => (
             <li key={t} className="flex items-center gap-1.5"><span aria-hidden className="text-lime-deep">✓</span>{t}</li>
           ))}
         </ul>
