@@ -63,6 +63,23 @@ jobs:
           gcloud artifacts repositories describe "$REPO" --location="$REGION" >/dev/null 2>&1 || \
             gcloud artifacts repositories create "$REPO" --repository-format=docker --location="$REGION" --description="Framatic images"
 
+      - name: Check Supabase secrets
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ok=true
+          case "$SUPABASE_URL" in
+            https://*.supabase.co|https://*.supabase.co/) ;;
+            *) echo "::error::SUPABASE_URL should look like https://abcdefgh.supabase.co (your Supabase Project URL). Fix it under Settings → Secrets and variables → Actions."; ok=false ;;
+          esac
+          if printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | grep -q '[{}" ]' || [ ${#SUPABASE_SERVICE_ROLE_KEY} -lt 30 ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY doesn't look like a Supabase key. It should be the secret key (sb_secret_…) or the legacy service_role key (starts with eyJ…), not a Google JSON file."
+            ok=false
+          fi
+          [ "$ok" = true ] || exit 1
+
       - name: Build image
         if: steps.cfg.outputs.ready == 'true'
         run: |
@@ -86,14 +103,26 @@ jobs:
 
       - name: Deploy Cloud Run job
         if: steps.cfg.outputs.ready == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          # Write env vars to a YAML file so special characters can't break flag parsing.
+          ENV_FILE="$RUNNER_TEMP/job-env.yaml"
+          python3 - "$ENV_FILE" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], "w") as f:
+              for k in ("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"):
+                  f.write(f"{k}: {json.dumps(os.environ[k].strip().rstrip('/'))}\n")
+          PY
           gcloud run jobs deploy "$JOB" \
             --image="$IMAGE" \
             --region="$REGION" \
             --tasks=1 --max-retries=1 --task-timeout=900s \
             --cpu=4 --memory=8Gi \
-            --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            --env-vars-file="$ENV_FILE" \
             --quiet
+          rm -f "$ENV_FILE"
 
       - name: Summary
         if: steps.cfg.outputs.ready == 'true'
