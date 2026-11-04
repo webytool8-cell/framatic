@@ -139,6 +139,7 @@ export function SceneView({
   const callouts = scene.visualElements.filter((v) => v.type === "feature_callout" && v.text);
   const icons = scene.visualElements.filter((v) => v.type === "icon_animation");
   const marquee = scene.visualElements.find((v) => v.type === "marquee");
+  const decorated = scene.background.type === "shape_field" || ["shape_burst", "geometric_sweep", "orbit", "confetti", "sparkles"].some((t) => types.has(t as Scene["visualElements"][number]["type"]));
   const subOpacity = interpolate(frame, [12, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const textAlign = hasMedia && !portrait ? "left" : "center";
   const progress = Math.min(1, frame / Math.max(1, sceneFrames - 1));
@@ -205,16 +206,18 @@ export function SceneView({
       );
     }
     return layer === "copy" ? (
-      <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", right: splitRight ? "40%" : 0, bottom: splitBottom ? "40%" : 0 }}>{text}</AbsoluteFill>
+      <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", width: splitRight ? "60%" : "100%", height: splitBottom ? "60%" : "100%" }}>{text}</AbsoluteFill>
     ) : null;
   };
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
+      {/* The background stays put so split panels keep lining up with the text. */}
+      <Background scene={scene} plan={plan} unit={unit} />
       <CameraRig camera={stageCamera} sceneFrames={sceneFrames}>
-        <Background scene={scene} plan={plan} unit={unit} />
         {backdrop && <PhotoBackdrop el={backdrop} bg={bg} progress={progress} />}
-        {(plan.graphics ?? "lively") !== "calm" || !backdrop ? <MotionGraphics scene={scene} plan={plan} unit={unit} bg={bg} /> : null}
+        {/* One decorative system per scene: ambient accents only when nothing else decorates it. */}
+        {!backdrop && !decorated && <MotionGraphics scene={scene} plan={plan} unit={unit} bg={bg} />}
         {types.has("shape_burst") && scene.background.type !== "shape_field" && <ShapeBurst plan={plan} unit={unit} />}
         {types.has("geometric_sweep") && <GeometricSweep plan={plan} unit={unit} />}
         {types.has("orbit") && <Orbit plan={plan} unit={unit} />}

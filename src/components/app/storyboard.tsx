@@ -37,9 +37,12 @@ export function StoryboardFrame({ scene, plan, index, logoUrl, className }: { sc
       {scene.background.type === "grid" && <div className="absolute inset-0 opacity-15" style={{ backgroundImage: `linear-gradient(${ink} 1px, transparent 1px), linear-gradient(90deg, ${ink} 1px, transparent 1px)`, backgroundSize: "14% 14%" }} />}
       {(scene.background.type === "shape_field" || types.has("geometric_sweep") || types.has("shape_burst")) && (
         <>
-          <div className="absolute -right-[8%] -top-[12%] h-[45%] aspect-square rounded-full" style={{ background: plan.palette.primary, opacity: bg === plan.palette.primary ? 0.3 : 0.9 }} />
-          <div className="absolute -bottom-[10%] left-[8%] h-[30%] aspect-square rounded-full border-[6px]" style={{ borderColor: plan.palette.accent }} />
-          <div className="absolute bottom-[14%] right-[12%] h-[6%] w-[22%] rounded-full" style={{ background: plan.palette.secondary }} />
+          <svg aria-hidden viewBox="133.9 169.5 232.2 232" className="absolute right-[6%] top-[6%] h-[24%] aspect-square">
+            <path d="M250 169.516C258.929 169.516 256.696 225.277 285.714 249.812C312.5 274.348 366.071 276.578 366.071 285.5C366.071 294.422 312.5 296.652 285.714 321.188C256.696 345.723 258.929 401.484 250 401.484C241.071 401.484 243.304 345.723 214.286 321.188C187.5 296.652 133.929 294.422 133.929 285.5C133.929 276.578 187.5 274.348 214.286 249.812C243.304 225.277 241.071 169.516 250 169.516Z" fill={bg === plan.palette.primary ? plan.palette.secondary : plan.palette.primary} />
+          </svg>
+          <svg aria-hidden viewBox="0 0 120 40" className="absolute bottom-[10%] left-[6%] w-[22%]">
+            <path d="M4 20c10-14 20-14 28 0s18 14 28 0 18-14 28 0 18 14 28 0" fill="none" stroke={plan.palette.accent} strokeWidth={8} strokeLinecap="round" />
+          </svg>
         </>
       )}
       {backdrop?.src && (

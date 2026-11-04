@@ -26,28 +26,25 @@ export function seeded(seed: string) {
   };
 }
 
-type ShapeKind = "blob" | "ring" | "spark" | "plus" | "dots" | "squiggle" | "pill" | "half";
-const KINDS: ShapeKind[] = ["blob", "ring", "spark", "plus", "dots", "squiggle", "pill", "half"];
-const COUNT = { calm: 3, lively: 6, bold: 9 } as const;
+/** Accent shapes. Deliberately no circles: sparks, lines and angles read as "designed", not bubbly. */
+export type ShapeKind = "spark" | "plus" | "squiggle" | "zigzag" | "triangle" | "bars";
+const KINDS: ShapeKind[] = ["spark", "squiggle", "plus", "zigzag", "triangle", "bars"];
+/** At most a few accents at once, so they frame the message instead of crowding it. */
+const COUNT = { calm: 0, lively: 2, bold: 3 } as const;
 
 /** Positions around the edges, keeping the middle clear for the message. */
 function edgePosition(r: () => number): { x: number; y: number } {
   const side = Math.floor(r() * 4);
-  const along = 4 + r() * 92;
-  const depth = 3 + r() * 17;
+  const along = 8 + r() * 84;
+  const depth = 5 + r() * 9;
   if (side === 0) return { x: along, y: depth };
   if (side === 1) return { x: 100 - depth, y: along };
   if (side === 2) return { x: along, y: 100 - depth };
   return { x: depth, y: along };
 }
 
-function Shape({ kind, color, size, unit }: { kind: ShapeKind; color: string; size: number; unit: number }) {
-  const stroke = Math.max(2, unit * 0.9);
+export function Shape({ kind, color, size, frame = 0 }: { kind: ShapeKind; color: string; size: number; frame?: number }) {
   switch (kind) {
-    case "blob":
-      return <div style={{ width: size, height: size, borderRadius: "46% 54% 58% 42% / 52% 44% 56% 48%", background: color }} />;
-    case "ring":
-      return <div style={{ width: size, height: size, borderRadius: "50%", border: `${stroke * 1.4}px solid ${color}` }} />;
     case "spark":
       return (
         <svg viewBox={SPARK_VIEWBOX} width={size} height={size}>
@@ -56,27 +53,38 @@ function Shape({ kind, color, size, unit }: { kind: ShapeKind; color: string; si
       );
     case "plus":
       return (
-        <svg viewBox="0 0 24 24" width={size * 0.6} height={size * 0.6}>
-          <path d="M12 3v18M3 12h18" stroke={color} strokeWidth={4} strokeLinecap="round" />
-        </svg>
-      );
-    case "dots":
-      return (
-        <svg viewBox="0 0 30 30" width={size} height={size}>
-          {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => <circle key={`${r}${c}`} cx={5 + c * 10} cy={5 + r * 10} r={2.4} fill={color} />))}
+        <svg viewBox="0 0 24 24" width={size * 0.7} height={size * 0.7}>
+          <path d="M12 3v18M3 12h18" stroke={color} strokeWidth={3.6} strokeLinecap="round" />
         </svg>
       );
     case "squiggle":
       return (
-        <svg viewBox="0 0 120 40" width={size * 1.6} height={size * 0.55}>
+        <svg viewBox="0 0 120 40" width={size * 1.7} height={size * 0.57}>
           <path d="M4 20c10-14 20-14 28 0s18 14 28 0 18-14 28 0 18 14 28 0" fill="none" stroke={color} strokeWidth={7} strokeLinecap="round" />
         </svg>
       );
-    case "pill":
-      return <div style={{ width: size * 1.5, height: size * 0.42, borderRadius: size, background: color }} />;
-    case "half":
-    default:
-      return <div style={{ width: size, height: size / 2, borderRadius: `${size}px ${size}px 0 0`, background: color }} />;
+    case "zigzag":
+      return (
+        <svg viewBox="0 0 120 40" width={size * 1.6} height={size * 0.53}>
+          <path d="M4 32 24 8l20 24 20-24 20 24 20-24 12 14" fill="none" stroke={color} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "triangle":
+      return (
+        <svg viewBox="0 0 40 40" width={size * 0.9} height={size * 0.9}>
+          <path d="M20 5 36 33H4Z" fill="none" stroke={color} strokeWidth={4.5} strokeLinejoin="round" />
+        </svg>
+      );
+    case "bars":
+    default: {
+      // A tiny equalizer that pulses with time.
+      const h = [0, 1, 2].map((i) => 0.45 + 0.55 * Math.abs(Math.sin(frame / 7 + i * 1.3)));
+      return (
+        <svg viewBox="0 0 36 36" width={size * 0.8} height={size * 0.8}>
+          {h.map((v, i) => <rect key={i} x={3 + i * 11} y={34 - v * 32} width={8} height={v * 32} rx={3} fill={color} />)}
+        </svg>
+      );
+    }
   }
 }
 
@@ -88,12 +96,13 @@ export function MotionGraphics({ scene, plan, unit, bg }: { scene: Scene; plan: 
   const r = seeded(`${scene.id}:${scene.purpose}`);
   const colors = [plan.palette.primary, plan.palette.secondary, plan.palette.accent, plan.palette.ink].filter((c) => c.toLowerCase() !== bg.toLowerCase());
   const n = COUNT[level];
+  if (n === 0) return null;
   const items = Array.from({ length: n }, (_, i) => {
     const pos = edgePosition(r);
     return {
-      kind: KINDS[Math.floor(r() * KINDS.length)],
+      kind: KINDS[(Math.floor(r() * KINDS.length) + i * 2) % KINDS.length],
       color: colors[Math.floor(r() * colors.length)] ?? plan.palette.primary,
-      size: unit * (3 + r() * (level === "bold" ? 12 : 9)),
+      size: unit * (3.5 + r() * (level === "bold" ? 4.5 : 3)),
       ...pos,
       delay: Math.round(i * 2.5 + r() * 4),
       speed: 0.4 + r() * 0.9,
@@ -113,7 +122,7 @@ export function MotionGraphics({ scene, plan, unit, bg }: { scene: Scene; plan: 
         const twinkle = it.kind === "spark" ? 0.85 + 0.15 * Math.sin(t * 5 + it.phase) : 1;
         return (
           <div key={i} style={{ position: "absolute", left: `${it.x}%`, top: `${it.y}%`, transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(${pop * twinkle})` }}>
-            <Shape kind={it.kind} color={it.color} size={it.size} unit={unit} />
+            <Shape kind={it.kind} color={it.color} size={it.size} frame={frame} />
           </div>
         );
       })}

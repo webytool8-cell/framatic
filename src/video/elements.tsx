@@ -1,6 +1,7 @@
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import type { ScenePlan, VisualElement } from "@/lib/creative/scene-plan";
 import { inkOn, msToFrames, parseStat, resolveColor } from "./timeline";
+import { Shape, type ShapeKind } from "./graphics";
 
 /* Pre-built visual components. Each maps 1:1 to a controlled-vocabulary type. */
 
@@ -45,13 +46,12 @@ function usePop(delayFrames = 0, damping = 12) {
   return spring({ frame: frame - delayFrames, fps, config: { damping, stiffness: 150 } });
 }
 
-/** Expanding circles and rings. */
+/** A few accent shapes popping in around the edges (sparks and lines, no circles). */
 export function ShapeBurst({ plan, unit }: { plan: ScenePlan; unit: number }) {
-  const shapes = [
-    { x: 78, y: 18, r: 9, c: plan.palette.primary, ring: false, d: 0 },
-    { x: 14, y: 76, r: 6, c: plan.palette.accent, ring: true, d: 4 },
-    { x: 88, y: 82, r: 3.5, c: plan.palette.secondary, ring: false, d: 8 },
-    { x: 20, y: 18, r: 2.2, c: plan.palette.secondary, ring: true, d: 10 },
+  const shapes: { x: number; y: number; size: number; c: string; kind: ShapeKind; d: number; rot: number }[] = [
+    { x: 84, y: 16, size: 11, c: plan.palette.primary, kind: "spark", d: 0, rot: 0 },
+    { x: 13, y: 82, size: 7, c: plan.palette.accent, kind: "squiggle", d: 5, rot: -8 },
+    { x: 88, y: 84, size: 5, c: plan.palette.secondary, kind: "plus", d: 9, rot: 0 },
   ];
   return (
     <>
@@ -62,27 +62,14 @@ export function ShapeBurst({ plan, unit }: { plan: ScenePlan; unit: number }) {
   );
 }
 
-function BurstShape({ x, y, r, c, ring, d, unit }: { x: number; y: number; r: number; c: string; ring: boolean; d: number; unit: number }) {
+function BurstShape({ x, y, size, c, kind, d, rot, unit }: { x: number; y: number; size: number; c: string; kind: ShapeKind; d: number; rot: number; unit: number }) {
   const s = usePop(d, 10);
   const frame = useCurrentFrame();
-  const drift = Math.sin((frame + d * 10) / 40) * unit * 0.4;
-  const size = r * unit * 2;
+  const drift = Math.sin((frame + d * 10) / 40) * unit * 0.6;
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${x}%`,
-        top: `${y}%`,
-        width: size,
-        height: size,
-        marginLeft: -size / 2,
-        marginTop: -size / 2 + drift,
-        borderRadius: "50%",
-        background: ring ? "transparent" : c,
-        border: ring ? `${unit * 1.2}px solid ${c}` : undefined,
-        transform: `scale(${s})`,
-      }}
-    />
+    <div style={{ position: "absolute", left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) translateY(${drift}px) rotate(${rot + (kind === "spark" ? frame * 0.6 : 0)}deg) scale(${s})` }}>
+      <Shape kind={kind} color={c} size={size * unit} frame={frame} />
+    </div>
   );
 }
 
@@ -94,7 +81,9 @@ export function GeometricSweep({ plan, unit }: { plan: ScenePlan; unit: number }
   return (
     <>
       <div style={{ position: "absolute", left: 0, top: "62%", height: unit * 5, width: `${p * 100}%`, background: plan.palette.accent, borderRadius: unit * 2.5 }} />
-      <div style={{ position: "absolute", right: `${(1 - p) * 30 + 6}%`, top: "12%", width: unit * 14, height: unit * 14, borderRadius: "50%", background: plan.palette.primary, opacity: p }} />
+      <div style={{ position: "absolute", right: `${(1 - p) * 30 + 6}%`, top: "10%", opacity: p, transform: `rotate(${p * 90}deg)` }}>
+        <Shape kind="spark" color={plan.palette.primary} size={unit * 12} frame={frame} />
+      </div>
     </>
   );
 }

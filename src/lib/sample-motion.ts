@@ -16,7 +16,7 @@ export function animateSample(plan: ScenePlan): ScenePlan {
       return { ...s, camera: { move: "punch_in", focus: { x: 0.76, y: 0.93 }, scale: 1.7 } };
     }
     if (types.has("stat_counter")) {
-      return { ...s, visualElements: add(s, "orbit"), camera: { move: "push_in", focus: { x: 0.5, y: 0.45 }, scale: 1.18 } };
+      return { ...s, camera: { move: "push_in", focus: { x: 0.5, y: 0.45 }, scale: 1.18 } };
     }
     if (i === last) {
       return { ...s, visualElements: add(s, "sparkles"), camera: { move: "pull_out", focus: { x: 0.5, y: 0.5 }, scale: 1.12 } };
