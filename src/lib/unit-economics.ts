@@ -59,7 +59,7 @@ export type TierMargin = {
 export type Economics = {
   ops: OpRecord[];
   byOperation: OpStats[];
-  totals: { ai: number; compute: number; render: number; storage: number; delivery: number; other: number; all: number; unattributed: number; wastedOnFailures: number };
+  totals: { ai: number; compute: number; render: number; storage: number; delivery: number; image: number; other: number; all: number; unattributed: number; wastedOnFailures: number };
   finishedVideos: number;
   costPerFinishedVideo: number | null;
   firstVideoCost: number | null;
@@ -173,6 +173,7 @@ export function buildEconomics(input: {
     render: cat("render"),
     storage: cat("storage"),
     delivery: cat("delivery"),
+    image: cat("image"),
     other: cat("other"),
     all: 0,
     unattributed:
@@ -180,7 +181,7 @@ export function buildEconomics(input: {
       other.filter((r) => !r.operation_id || !opIds.has(r.operation_id)).reduce((a, r) => a + num(r.cost_usd), 0),
     wastedOnFailures: byOperation.reduce((a, s) => a + s.wasted, 0),
   };
-  totals.all = totals.ai + totals.compute + totals.render + totals.storage + totals.delivery + totals.other;
+  totals.all = totals.ai + totals.compute + totals.render + totals.storage + totals.delivery + totals.image + totals.other;
 
   const allocated = ledger.filter((t) => t.type === "allocation").reduce((a, t) => a + num(t.amount), 0);
   const consumed = ledger.filter((t) => t.type === "capture").reduce((a, t) => a + num(t.list_credits), 0);

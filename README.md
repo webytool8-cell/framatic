@@ -118,3 +118,10 @@ The animated preview uses [Remotion](https://www.remotion.dev). It's free for in
 - **Metering:** AI calls (`ai_usage`) and compute, render, storage and delivery estimates (`cost_events`) carry the operation id of the hold that paid for them.
 - **Admin:** `/admin/usage` (emails in `FRAMATIC_ADMIN_EMAILS`) shows cost per finished video, cost vs credits per operation and against cost ceilings, plan margins after payment fees against the 70% minimum / 80–90% target, failure rate, utilization and a ledger audit. Credit costs, ceilings and cost assumptions are edited there and stored in `billing_config` (no deploy needed).
 - **Tests:** `npm run test:db` runs the ledger tests, including 8 concurrent requests racing for the same credits.
+
+
+## Motion graphics, camera moves and photos
+
+- Every scene gets floating shapes, rings and sparks (plan `graphics`: calm, lively or bold), plus optional `sparkles`, `orbit`, `marquee` and `confetti` elements.
+- Scene `camera` moves (drift, push in, pull out, punch in on the beat, pan) zoom toward a chosen `focus` point. In scenes with a product window or framed photo, the zoom happens inside that frame (for example right into the buy button); text always stays still and readable.
+- `photo` elements show the shop's own product-page images (copied into storage when concepts are written) or, if enabled, AI-generated lifestyle shots from Vertex AI. Generated photos show scenes and moods, never a made-up version of the product. Photos move with a slow zoom, pan or float, framed full-screen, as a card, a circle or a tilted print.

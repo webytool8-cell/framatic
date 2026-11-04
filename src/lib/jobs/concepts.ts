@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeLLMError, getLLM } from "@/lib/ai/llm";
 import { dbMeter } from "@/lib/ai/usage";
+import { attachPhotos, importSitePhotos, listPhotos, type Photo } from "@/lib/photos/library";
 import { CONCEPT_KINDS, CONCEPT_META, CreativePreferences, REGENERATABLE_FIELDS, mergeConcept, type ConceptKind, type RegeneratableField } from "@/lib/creative/concept";
 import { preferencesFromInstruction } from "@/lib/brief";
 import { generateConcept } from "@/lib/creative/director";
@@ -30,6 +31,11 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
     if (!brand) throw new UserFacingError("The brand profile for this project is missing.");
     const prefs = await resolvePreferences(db, userId, project.creative_preferences);
     const existing = await listConcepts(db, userId, projectId);
+    // Product photos from the page, shared by all three concepts.
+    const library: Photo[] = await importSitePhotos(db, userId, projectId).catch((e) => {
+      log.warn("photo import failed", { projectId, error: (e as Error).message });
+      return [];
+    });
 
     const results = await Promise.allSettled(
       CONCEPT_KINDS.map(async (kind) => {
@@ -44,6 +50,7 @@ export async function generateAllConcepts(db: SupabaseClient, userId: string, pr
           lockedFields: current?.edited_fields,
           siblings: existing.filter((c) => c.kind !== kind).map((c) => c.content.title),
         });
+        fresh.scenePlan = await attachPhotos(db, { userId, projectId, operationId, brand: brand.profile, plan: fresh.scenePlan, library });
         if (current && current.scenePlan) {
           const merged = mergeConcept({ content: current.content, scenePlan: current.scenePlan, editedFields: current.edited_fields }, fresh);
           await saveConceptVersion(db, userId, current, { content: merged.content, editedFields: merged.editedFields, scenePlan: merged.scenePlan, source: "ai" });
@@ -138,6 +145,14 @@ export async function regenerateConcept(
       instruction,
       lockedFields: instruction ? [] : concept.edited_fields,
       siblings,
+    });
+    fresh.scenePlan = await attachPhotos(db, {
+      userId,
+      projectId: concept.project_id,
+      operationId: opts.operationId,
+      brand: brand.profile,
+      plan: fresh.scenePlan,
+      library: await listPhotos(db, userId, concept.project_id),
     });
     // An explicit change request may touch anything, including fields the user edited.
     const merged = mergeConcept(

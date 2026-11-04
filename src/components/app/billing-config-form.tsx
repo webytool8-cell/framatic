@@ -50,6 +50,7 @@ export function BillingConfigForm({ config }: { config: BillingConfig }) {
           <NumberField name="p.storageGbMonth" label="Storage" value={c.prices.storageGbMonth} step="0.001" suffix="$/GB·mo" />
           <NumberField name="p.egressGb" label="Bandwidth" value={c.prices.egressGb} step="0.001" suffix="$/GB" />
           <NumberField name="p.downloadsPerVideo" label="Downloads per video" value={c.prices.downloadsPerVideo} step="0.1" />
+          <NumberField name="p.imagePerUnit" label="AI photo" value={c.prices.imagePerUnit} step="0.001" suffix="$ each" />
           <NumberField name="p.stripePercent" label="Payment fee" value={c.prices.stripePercent} step="0.1" suffix="%" />
           <NumberField name="p.stripeFixed" label="Payment fee (fixed)" value={c.prices.stripeFixed} step="0.01" suffix="$" />
         </div>

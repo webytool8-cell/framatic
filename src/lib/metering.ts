@@ -8,7 +8,7 @@ import { log } from "@/lib/log";
  * the credit operation that paid for it. AI calls are metered separately in
  * ai_usage with the same operation id. Costs are list-price estimates.
  */
-export type CostCategory = "compute" | "render" | "storage" | "delivery" | "other";
+export type CostCategory = "compute" | "render" | "storage" | "delivery" | "image" | "other";
 
 export async function recordCost(
   db: SupabaseClient,

@@ -33,7 +33,13 @@ Hard rules:
 - Copy must be short, concrete and on-brand. On-screen headlines ideally ≤ 7 words.
 - The scene plan uses ONLY the controlled vocabulary in the schema. Do not write code.
 - Make the concept feel tailored to THIS brand (its tone, audience, category, colors) — not a generic template.
-- Scene durations must add up to roughly the target duration. The final scene is a CTA end card.`;
+- Scene durations must add up to roughly the target duration. The final scene is a CTA end card.
+
+Motion design (make every scene feel alive):
+- Give each scene a camera move. Zooms head for a specific spot: set camera.focus (x, y from 0 to 1, top-left origin) on what matters. In scenes with a product window or framed photo, focus is inside that frame (the product window's buy button sits near x 0.74, y 0.92; its product image near x 0.25, y 0.55), so you can zoom right into a detail. In other scenes it's the whole frame (a big number, the space around the headline). Use punch_in for punchy beats, push_in for building tension, pull_out for reveals, pan (with camera.to) across a photo, drift for calm moments. Vary the moves; don't zoom the same way in every scene.
+- Set the plan's graphics level (calm, lively, bold) to suit the brand: bold for playful or energetic brands, calm for premium or minimal ones.
+- Extra elements: sparkles (twinkling sparks around the message), orbit (rings turning around a key line or number), marquee (a scrolling band; put a short phrase in its text), confetti (celebration; only for offers or the CTA).
+- Photos: add a photo element to one or two scenes where a picture helps (the product in use, a lifestyle moment, the mood). Write its prompt as the scene to show (setting, light, hands, people, ingredients, surroundings), never invented product details, logos or text. Pick photoStyle (full = behind the text; card, tilted or circle = framed beside the text) and motion (ken_burns, zoom_out, pan_left, pan_right, float). Never set src: Framatic fills it with the shop's own product photos or a generated image. Don't put a photo and a product window (screenshot_reveal) in the same scene.`;
 
 function claimLine(label: string, c: { value: string; provenance: string }) {
   if (!c.value) return null;

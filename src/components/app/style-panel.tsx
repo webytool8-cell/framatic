@@ -1,13 +1,13 @@
 "use client";
 import { Field, Select } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
-import { COLOR_ROLES, COLOR_ROLE_LABEL, HEADING_FONTS } from "@/lib/creative/labels";
-import { ASPECT_RATIOS, type ScenePlan } from "@/lib/creative/scene-plan";
+import { COLOR_ROLES, COLOR_ROLE_LABEL, GRAPHICS_LABEL, HEADING_FONTS } from "@/lib/creative/labels";
+import { ASPECT_RATIOS, GRAPHICS_LEVELS, type ScenePlan } from "@/lib/creative/scene-plan";
 
 const FORMAT_HINT: Record<ScenePlan["aspectRatio"], string> = { "9:16": "Reels · TikTok · Shorts", "1:1": "Feed", "4:5": "Feed · Stories", "16:9": "YouTube · web" };
 const FORMAT_BOX: Record<ScenePlan["aspectRatio"], string> = { "16:9": "h-5 w-9", "9:16": "h-9 w-5", "1:1": "h-7 w-7", "4:5": "h-8 w-6" };
 
-export type StyleState = Pick<ScenePlan, "aspectRatio" | "palette" | "fonts">;
+export type StyleState = Pick<ScenePlan, "aspectRatio" | "palette" | "fonts" | "graphics">;
 
 /** Format, colors and fonts for the whole ad. Changes show in the preview right away. */
 export function StylePanel({ value, original, onChange }: { value: StyleState; original: StyleState; onChange: (v: StyleState) => void }) {
@@ -52,6 +52,18 @@ export function StylePanel({ value, original, onChange }: { value: StyleState; o
             </label>
           ))}
         </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-semibold">Motion graphics</p>
+        <div role="radiogroup" aria-label="Motion graphics" className="grid grid-cols-3 gap-2">
+          {GRAPHICS_LEVELS.map((g) => (
+            <button key={g} type="button" role="radio" aria-checked={(value.graphics ?? "lively") === g} onClick={() => onChange({ ...value, graphics: g })} className={cn("rounded-xl border-[1.5px] px-2 py-2 text-sm font-medium", (value.graphics ?? "lively") === g ? "border-violet bg-lavender" : "border-line hover:border-ink")}>
+              {GRAPHICS_LABEL[g]}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-slate">Floating shapes and sparks around every scene.</p>
       </div>
 
       <Field label="Headline font" htmlFor="style-font">

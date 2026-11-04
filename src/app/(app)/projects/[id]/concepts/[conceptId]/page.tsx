@@ -7,6 +7,7 @@ import { isRenderConfigured } from "@/lib/render/cloudrun";
 import type { RenderItem } from "@/components/app/export-panel";
 import { getBrandProfile, getConcept, getProject, listSceneVersions } from "@/lib/db/repo";
 import { requireUser } from "@/lib/supabase/server";
+import { listPhotos } from "@/lib/photos/library";
 
 export const metadata = { title: "Concept" };
 
@@ -23,9 +24,10 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(6);
-  const [brand, versions] = await Promise.all([
+  const [brand, versions, photos] = await Promise.all([
     project?.brand_profile_id ? getBrandProfile(supabase, user.id, project.brand_profile_id) : null,
     listSceneVersions(supabase, user.id, conceptId),
+    listPhotos(supabase, user.id, id).catch(() => []),
   ]);
 
   return (
@@ -44,6 +46,7 @@ export default async function ConceptPage({ params }: { params: Promise<{ id: st
           plan: concept.scenePlan,
         }}
         versions={versions}
+        photos={photos}
         creditCosts={await getCreditCosts(supabase)}
         logoUrl={brand?.profile.identity.logoUrl ?? null}
         productName={brand?.profile.product.name.value || project?.name}

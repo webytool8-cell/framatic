@@ -47,7 +47,17 @@ export const ELEMENT_LABEL: Record<(typeof VISUAL_ELEMENT_TYPES)[number], string
   stat_counter: "Big number",
   logo_reveal: "Logo",
   cta_end_card: "Call-to-action card",
+  photo: "Photo",
+  sparkles: "Sparkles",
+  orbit: "Orbiting rings",
+  marquee: "Scrolling text band",
+  confetti: "Confetti",
 };
+
+export const PHOTO_MOTION_LABEL = { ken_burns: "Slow zoom & drift", zoom_out: "Zoom out", pan_left: "Pan left", pan_right: "Pan right", float: "Float" } as const;
+export const PHOTO_STYLE_LABEL = { full: "Full screen", card: "Card", circle: "Circle", tilted: "Tilted print" } as const;
+export const CAMERA_LABEL = { none: "Still", drift: "Gentle drift", push_in: "Slow zoom in", pull_out: "Zoom out", punch_in: "Punch in on the beat", pan: "Pan across" } as const;
+export const GRAPHICS_LABEL = { calm: "Calm", lively: "Lively", bold: "Bold" } as const;
 
 /** Elements whose own `text` is shown on screen (the headline and button text are edited separately). */
 export const TEXT_ELEMENTS = new Set<(typeof VISUAL_ELEMENT_TYPES)[number]>(["feature_callout", "stat_counter"]);
@@ -57,6 +67,11 @@ export const BUTTON_ELEMENTS = new Set<(typeof VISUAL_ELEMENT_TYPES)[number]>(["
 
 /** Elements people can add by hand, with sensible starting values. */
 export const ADDABLE_ELEMENTS: { type: (typeof VISUAL_ELEMENT_TYPES)[number]; text?: string; icon?: (typeof ICONS)[number] }[] = [
+  { type: "photo" },
+  { type: "sparkles" },
+  { type: "orbit" },
+  { type: "marquee" },
+  { type: "confetti" },
   { type: "feature_callout", text: "New feature", icon: "sparkle" },
   { type: "stat_counter", text: "3" },
   { type: "screenshot_reveal" },

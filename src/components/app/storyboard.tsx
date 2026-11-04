@@ -25,7 +25,11 @@ export function StoryboardFrame({ scene, plan, index, logoUrl, className }: { sc
   const ink = contrastInk(bg);
   const types = new Set(scene.visualElements.map((v) => v.type));
   const vertical = plan.aspectRatio === "9:16" || plan.aspectRatio === "4:5";
-  const showsProduct = types.has("screenshot_reveal") || types.has("product_recording") || scene.productFootage.required;
+  const photos = scene.visualElements.filter((v) => v.type === "photo" && v.src);
+  const backdrop = photos.find((p) => p.photoStyle === "full");
+  const framed = photos.find((p) => p.photoStyle !== "full");
+  const hasProductWindow = types.has("screenshot_reveal") || types.has("product_recording") || scene.productFootage.required;
+  const showsProduct = hasProductWindow || !!framed;
 
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-black/10", RATIO[plan.aspectRatio], className)} style={{ background: bg, color: ink }} aria-label={`Storyboard frame ${index + 1}: ${scene.headline}`} role="img">
@@ -38,7 +42,26 @@ export function StoryboardFrame({ scene, plan, index, logoUrl, className }: { sc
           <div className="absolute bottom-[14%] right-[12%] h-[6%] w-[22%] rounded-full" style={{ background: plan.palette.secondary }} />
         </>
       )}
-      {showsProduct && (
+      {backdrop?.src && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={backdrop.src} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0" style={{ background: `${bg}c0` }} />
+        </>
+      )}
+      {framed?.src && !hasProductWindow && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={framed.src}
+          alt=""
+          className={cn(
+            "absolute object-cover shadow-md",
+            framed.photoStyle === "circle" ? "aspect-square rounded-full" : framed.photoStyle === "tilted" ? "-rotate-3 rounded border-4 border-b-[10px] border-white" : "rounded-lg",
+            vertical ? "inset-x-[12%] top-[40%] bottom-[14%] h-[46%] w-[76%]" : "right-[6%] top-[16%] h-[68%] w-[44%]",
+          )}
+        />
+      )}
+      {hasProductWindow && (
         <div className={cn("absolute rounded-lg border border-black/10 bg-white shadow-sm", vertical ? "inset-x-[10%] top-[38%] bottom-[16%]" : "right-[6%] top-[16%] bottom-[16%] w-[46%]")}>
           <div className="flex gap-1 border-b border-black/5 p-1.5">{[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 rounded-full bg-black/15" />)}</div>
           <div className="space-y-1.5 p-2">

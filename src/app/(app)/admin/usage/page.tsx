@@ -83,7 +83,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
     ["Cost per credit charged", econ.costPerCredit === null ? "–" : usd(econ.costPerCredit, 4), econ.costPerCreditIsEstimate ? "No charges yet" : "Includes failures and retries"],
     ["Credit utilization", pct(econ.credits.utilization), `${econ.credits.consumed.toLocaleString()} of ${econ.credits.allocated.toLocaleString()} allocated · ${econ.credits.held} on hold`],
     ["Failed operations", pct(econ.failureRate), `${usd(econ.totals.wastedOnFailures)} spent on failures (not charged)`],
-    ["Total spend", usd(econ.totals.all), `AI ${usd(econ.totals.ai)} · render ${usd(econ.totals.render)} · other ${usd(econ.totals.compute + econ.totals.storage + econ.totals.delivery + econ.totals.other)}`],
+    ["Total spend", usd(econ.totals.all), `AI ${usd(econ.totals.ai)} · photos ${usd(econ.totals.image)} · render ${usd(econ.totals.render)} · other ${usd(econ.totals.compute + econ.totals.storage + econ.totals.delivery + econ.totals.other)}`],
   ];
 
   return (

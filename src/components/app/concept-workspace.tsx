@@ -10,7 +10,7 @@ import { accentBorder } from "@/components/ui/card";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Tag } from "@/components/ui/status";
 import { SceneStrip } from "@/components/app/storyboard";
-import { SceneInspector, SceneList } from "@/components/app/scene-editor";
+import { SceneInspector, SceneList, type LibraryPhoto } from "@/components/app/scene-editor";
 import { StylePanel, type StyleState } from "@/components/app/style-panel";
 import { ScenePreview } from "@/components/app/scene-preview";
 import { ExportPanel, type RenderItem } from "@/components/app/export-panel";
@@ -50,6 +50,8 @@ type Props = {
   renders?: RenderItem[];
   /** Read-only sample: edits stay in the browser, nothing saves, no exports, no AI. */
   sample?: boolean;
+  /** The project's photo library (product-page and AI photos). */
+  photos?: LibraryPhoto[];
 };
 
 const QUICK_ASKS = ["Make it punchier", "Shorter: 15 seconds", "Vertical 9:16 for Reels", "More playful", "Focus on one feature", "Stronger call to action"];
@@ -57,14 +59,14 @@ const LONG: EditableField[] = ["description", "rationale", "supportingCopy", "vi
 const ADVANCED_FIELDS: EditableField[] = ["title", "campaignObjective", "description", "targetAudience", "rationale", "visualDirection", "typographyDirection", "musicMood", "pacing"];
 const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [], creditCosts = CREDIT_COST, sample = false }: Props) {
+export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiReady, renderReady = false, renders = [], creditCosts = CREDIT_COST, sample = false, photos = [] }: Props) {
   const router = useRouter();
   const meta = CONCEPT_META[concept.kind];
   const [content, setContent] = useState(concept.content);
   const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
   const [scenes, setScenes] = useState(concept.plan.scenes);
   const [scenesDirty, setScenesDirty] = useState(false);
-  const originalStyle: StyleState = { aspectRatio: concept.plan.aspectRatio, palette: concept.plan.palette, fonts: concept.plan.fonts };
+  const originalStyle: StyleState = { aspectRatio: concept.plan.aspectRatio, palette: concept.plan.palette, fonts: concept.plan.fonts, graphics: concept.plan.graphics ?? "lively" };
   const [style, setStyle] = useState<StyleState>(originalStyle);
   const [selectedScene, setSelectedScene] = useState(0);
   const [tab, setTab] = useState<"scene" | "style" | "copy">("scene");
@@ -259,7 +261,7 @@ export function ConceptWorkspace({ concept, versions, logoUrl, productName, aiRe
               ))}
             </div>
             <div className="p-4">
-              {tab === "scene" && <SceneInspector scenes={scenes} index={Math.min(selectedScene, scenes.length - 1)} plan={planPreview} onChange={changeScenes} />}
+              {tab === "scene" && <SceneInspector scenes={scenes} index={Math.min(selectedScene, scenes.length - 1)} plan={planPreview} onChange={changeScenes} photos={photos} />}
               {tab === "style" && (
                 <div className="space-y-6">
                   <StylePanel value={style} original={originalStyle} onChange={(v) => { setStyle(v); setNotice(null); }} />

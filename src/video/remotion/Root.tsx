@@ -39,6 +39,7 @@ const DEFAULT_PLAN: ScenePlan = {
   durationSec: 6,
   palette: { primary: "#7957FF", secondary: "#FF6B6B", accent: "#39C6E8", ink: "#202124", paper: "#FFFFFF" },
   fonts: { heading: "Archivo", body: "Archivo" },
+  graphics: "lively",
   music: { mood: "upbeat", bpm: 120, track: "bright-pop", volume: 0.7 },
   scenes: [
     { id: "a", purpose: "hook", durationSec: 2, headline: "Your product.", supportingText: "", visualElements: [{ type: "word_stagger", position: "center" }], animation: { type: "word_stagger", delayMs: 0, durationMs: 600, easing: "ease_out", staggerMs: 90 }, transition: { type: "wipe_left", durationMs: 300 }, background: { type: "solid", color: "paper" }, brandAssets: [], productFootage: { required: false, description: "" }, audioCues: [], cta: null },

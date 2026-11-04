@@ -4,6 +4,7 @@ import { finalizeConcept } from "@/lib/creative/director";
 import type { ScenePlan } from "@/lib/creative/scene-plan";
 import { aiConceptFixture } from "@/lib/dev/sample-data";
 import { trackById } from "@/video/music";
+import { animateSample } from "@/lib/sample-motion";
 
 /**
  * Fictional sample products used on the marketing page. Every plan runs through
@@ -48,7 +49,7 @@ function build(d: Def): SampleProduct {
     const raw = aiConceptFixture(d.concepts[0].title);
     raw.cta = d.cta;
     d.scenes(raw.scenePlan.scenes as unknown as RawScene[]);
-    return finalizeConcept(AIConcept.parse(raw), brand, CreativePreferences.parse({ aspectRatio, musicTrack: d.track })).scenePlan;
+    return animateSample(finalizeConcept(AIConcept.parse(raw), brand, CreativePreferences.parse({ aspectRatio, musicTrack: d.track })).scenePlan);
   };
   const plans = { "16:9": make("16:9"), "9:16": make("9:16"), "1:1": make("1:1"), "4:5": make("4:5") };
   const t = trackById(d.track);

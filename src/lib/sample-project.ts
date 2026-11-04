@@ -3,6 +3,7 @@ import { finalizeConcept } from "@/lib/creative/director";
 import type { ScenePlan } from "@/lib/creative/scene-plan";
 import { aiConceptFixture } from "@/lib/dev/sample-data";
 import { sampleBrand } from "@/lib/samples";
+import { animateSample } from "@/lib/sample-motion";
 
 /**
  * A fictional, read-only sample project (Lumen Mug) that every signed-in user
@@ -130,7 +131,7 @@ function build(d: (typeof DEFS)[number]): SampleConcept {
   const preferences = CreativePreferences.parse({ aspectRatio: d.ratio, musicTrack: d.track });
   const finished = finalizeConcept(AIConcept.parse(raw), sampleBrand, preferences);
   const { scenePlan, ...content } = finished;
-  return { id: `sample-${d.slug}`, slug: d.slug, kind: d.kind, content, plan: scenePlan, preferences };
+  return { id: `sample-${d.slug}`, slug: d.slug, kind: d.kind, content, plan: animateSample(scenePlan), preferences };
 }
 
 export const SAMPLE_CONCEPTS: SampleConcept[] = DEFS.map(build);

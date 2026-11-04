@@ -145,3 +145,67 @@ async function readCapped(res: Response, maxBytes: number): Promise<{ text: stri
   }
   return { text: new TextDecoder("utf-8", { fatal: false }).decode(merged), truncated };
 }
+
+export interface ImageResult {
+  url: string;
+  contentType: string;
+  bytes: Uint8Array;
+}
+
+const IMAGE_TYPES = /^image\/(jpeg|png|webp)\b/i;
+
+/**
+ * Download a public image with the same SSRF guards as page fetches. Only
+ * JPEG, PNG and WebP up to `maxBytes` are accepted; anything else throws.
+ */
+export async function safeFetchImage(input: URL, { maxBytes = 5_000_000, timeoutMs = 12_000 }: { maxBytes?: number; timeoutMs?: number } = {}): Promise<ImageResult> {
+  let current = new URL(input.toString());
+  const signal = AbortSignal.timeout(timeoutMs);
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertSafeUrl(current);
+    let res: Response;
+    try {
+      res = await undiciFetch(current, { redirect: "manual", signal, headers: { "user-agent": USER_AGENT, accept: "image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1" }, dispatcher: guardedAgent });
+    } catch (err) {
+      if (err instanceof UnsafeUrlError || (err as { cause?: unknown }).cause instanceof UnsafeUrlError) throw new UnsafeUrlError("That image is on a private address.");
+      throw new FetchFailedError("Couldn't download that image.");
+    }
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      await res.body?.cancel();
+      if (!location) throw new FetchFailedError("Image redirect without a destination.", res.status);
+      current = new URL(location, current);
+      continue;
+    }
+    const contentType = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (!res.ok || !IMAGE_TYPES.test(contentType)) {
+      await res.body?.cancel();
+      throw new FetchFailedError(`Not a usable image (HTTP ${res.status}, ${contentType || "unknown type"}).`, res.status);
+    }
+    if (Number(res.headers.get("content-length") ?? "0") > maxBytes) {
+      await res.body?.cancel();
+      throw new FetchFailedError("That image is too large.", res.status);
+    }
+    const reader = res.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new FetchFailedError("That image is too large.", res.status);
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let o = 0;
+    for (const c of chunks) {
+      bytes.set(c, o);
+      o += c.byteLength;
+    }
+    return { url: current.toString(), contentType, bytes };
+  }
+  throw new FetchFailedError("The image redirected too many times.");
+}

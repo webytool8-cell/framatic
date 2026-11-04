@@ -3,9 +3,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { ConceptContent, CreativePreferences, EDITABLE_FIELDS } from "@/lib/creative/concept";
-import { ASPECT_RATIOS, Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
+import { ASPECT_RATIOS, GRAPHICS_LEVELS, Scene, ScenePlan, normalizeScenePlan, snapToBeats } from "@/lib/creative/scene-plan";
 import { SOUND_SETS, trackById } from "@/video/music";
 import { getConcept, saveConceptVersion } from "@/lib/db/repo";
+import { listPhotos } from "@/lib/photos/library";
 import type { FormState } from "./auth";
 
 const ContentPatch = ConceptContent.pick(Object.fromEntries(EDITABLE_FIELDS.map((f) => [f, true])) as Record<(typeof EDITABLE_FIELDS)[number], true>).partial();
@@ -138,6 +139,7 @@ const ManualEdits = z.object({
       aspectRatio: z.enum(ASPECT_RATIOS),
       palette: z.object({ primary: Hex, secondary: Hex, accent: Hex, ink: Hex, paper: Hex }),
       fonts: z.object({ heading: z.string().regex(/^[A-Za-z0-9 ]{2,40}$/), body: z.string().regex(/^[A-Za-z0-9 ]{2,40}$/) }),
+      graphics: z.enum(GRAPHICS_LEVELS).default("lively"),
     })
     .optional(),
 });
@@ -166,6 +168,12 @@ export async function saveManualEdits(conceptId: string, edits: unknown): Promis
 
   let scenePlan: ScenePlan | undefined;
   if (planEdits) {
+    // Photos must come from this project's own library (no arbitrary URLs in exports).
+    const srcs = planEdits.scenes.flatMap((s) => s.visualElements.filter((v) => v.type === "photo").map((v) => v.src));
+    if (srcs.length) {
+      const allowed = new Set((await listPhotos(supabase, user.id, concept.project_id)).map((p) => p.url));
+      if (srcs.some((src) => !src || !allowed.has(src))) return { error: "Pick photos from this project's photo library." };
+    }
     const candidate = { ...concept.scenePlan, ...planEdits };
     if (JSON.stringify(candidate) !== JSON.stringify(concept.scenePlan)) {
       const track = trackById(concept.scenePlan.music.track);

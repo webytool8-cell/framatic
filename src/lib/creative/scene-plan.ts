@@ -22,6 +22,11 @@ export const VISUAL_ELEMENT_TYPES = [
   "stat_counter",
   "logo_reveal",
   "cta_end_card",
+  "photo",
+  "sparkles",
+  "orbit",
+  "marquee",
+  "confetti",
 ] as const;
 
 export const ANIMATION_TYPES = [
@@ -57,6 +62,15 @@ export const ASSET_REFS = ["logo", "primary_screenshot", "feature_screenshot", "
 
 export const ASPECT_RATIOS = ["16:9", "9:16", "1:1", "4:5"] as const;
 
+/** How a photo moves on screen. */
+export const PHOTO_MOTIONS = ["ken_burns", "zoom_out", "pan_left", "pan_right", "float"] as const;
+/** How a photo is framed in the scene. */
+export const PHOTO_STYLES = ["full", "card", "circle", "tilted"] as const;
+/** Camera moves across a whole scene. Zooms head for `focus`, not just the middle. */
+export const CAMERA_MOVES = ["none", "drift", "push_in", "pull_out", "punch_in", "pan"] as const;
+/** How much decorative motion graphics every scene gets. */
+export const GRAPHICS_LEVELS = ["calm", "lively", "bold"] as const;
+
 const ColorRef = z.union([
   z.enum(["primary", "secondary", "accent", "ink", "paper"]),
   z.string().regex(/^#[0-9a-fA-F]{6}$/),
@@ -69,6 +83,12 @@ export const VisualElement = z.object({
   color: ColorRef.optional(),
   asset: z.enum(ASSET_REFS).optional().describe("Brand asset this element needs"),
   position: z.enum(["center", "top", "bottom", "left", "right", "full"]).default("center"),
+  /** photo: image URL. Filled in by Framatic (product photos or generated), never by the AI. */
+  src: z.string().url().max(2048).optional(),
+  /** photo: what the picture should show, e.g. "the mug on a sunny desk, steam rising". */
+  prompt: z.string().max(400).optional().describe("photo only: describe the image to show"),
+  motion: z.enum(PHOTO_MOTIONS).optional().describe("photo only"),
+  photoStyle: z.enum(PHOTO_STYLES).optional().describe("photo only: full = full-bleed behind the text"),
 });
 export type VisualElement = z.infer<typeof VisualElement>;
 
@@ -105,8 +125,18 @@ export const Scene = z.object({
     .max(4)
     .default([]),
   cta: z.object({ text: z.string().max(40), url: z.string().max(2048).optional() }).nullable().default(null),
+  /** Camera move for the scene's visuals; zooms aim at `focus` (0–1 from the top-left). Text stays readable. */
+  camera: z
+    .object({
+      move: z.enum(CAMERA_MOVES).default("drift"),
+      focus: z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).default({ x: 0.5, y: 0.5 }),
+      to: z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).optional().describe("pan only: where the camera ends"),
+      scale: z.number().min(1).max(2.5).default(1.35),
+    })
+    .optional(),
 });
 export type Scene = z.infer<typeof Scene>;
+export type Camera = NonNullable<Scene["camera"]>;
 
 export const ScenePlan = z.object({
   schemaVersion: z.literal(SCENE_PLAN_SCHEMA_VERSION),
@@ -131,6 +161,8 @@ export const ScenePlan = z.object({
     soundSet: z.string().max(40).optional(),
   }),
   scenes: z.array(Scene).min(3).max(14),
+  /** Decorative motion graphics on every scene (floating shapes, rings, sparks). */
+  graphics: z.enum(GRAPHICS_LEVELS).default("lively"),
 });
 export type ScenePlan = z.infer<typeof ScenePlan>;
 

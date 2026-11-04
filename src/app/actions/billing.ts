@@ -20,6 +20,7 @@ export async function saveBillingConfig(_: FormState, form: FormData): Promise<F
       storageGbMonth: n(form, "p.storageGbMonth"),
       egressGb: n(form, "p.egressGb"),
       downloadsPerVideo: n(form, "p.downloadsPerVideo"),
+      imagePerUnit: n(form, "p.imagePerUnit"),
       stripePercent: n(form, "p.stripePercent"),
       stripeFixed: n(form, "p.stripeFixed"),
     },

@@ -120,6 +120,8 @@ export function ProductWindow({ plan, unit, recording, image, label }: { plan: S
         overflow: "hidden",
         transform: `translateY(${(1 - s) * 30}%)`,
         opacity: s,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div style={{ display: "flex", gap: unit * 0.8, padding: unit * 1.2, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
@@ -127,9 +129,9 @@ export function ProductWindow({ plan, unit, recording, image, label }: { plan: S
       </div>
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={image} alt="" style={{ width: "100%", flex: 1, minHeight: 0, objectFit: "cover" }} />
       ) : recording ? (
-        <div style={{ display: "grid", gridTemplateColumns: "28% 1fr", height: "100%" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "28% 1fr", flex: 1, minHeight: 0 }}>
           <div style={{ background: "#F7F7FA", padding: unit * 1.5, display: "flex", flexDirection: "column", gap: unit }}>
             {[0, 1, 2, 3].map((i) => <div key={i} style={{ height: unit * 1.2, borderRadius: unit, background: i === 1 ? plan.palette.primary : "rgba(0,0,0,0.08)", width: `${80 - i * 10}%` }} />)}
           </div>
@@ -148,7 +150,7 @@ export function ProductWindow({ plan, unit, recording, image, label }: { plan: S
         </div>
       ) : (
         // Product-page mock: hero image block, title, price, add-to-cart.
-        <div style={{ display: "grid", gridTemplateColumns: "52% 1fr", height: "100%" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "52% 1fr", flex: 1, minHeight: 0 }}>
           <div style={{ margin: unit * 1.5, borderRadius: unit * 1.2, background: `radial-gradient(circle at 35% 35%, ${plan.palette.accent} 0%, ${plan.palette.primary} 55%, ${plan.palette.secondary} 130%)`, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", left: "28%", top: "26%", width: "44%", height: "52%", borderRadius: `${unit}px ${unit}px ${unit * 3}px ${unit * 3}px`, background: "rgba(255,255,255,0.85)", transform: `scale(${interpolate(frame, [0, fps * 0.6], [0.85, 1], { extrapolateRight: "clamp" })})` }} />
           </div>

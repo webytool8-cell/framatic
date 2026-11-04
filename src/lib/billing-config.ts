@@ -22,6 +22,8 @@ export const BillingConfig = z.object({
     egressGb: z.number().min(0),
     /** Downloads assumed per finished video when estimating delivery. */
     downloadsPerVideo: z.number().min(0).max(100),
+    /** One AI-generated photo. */
+    imagePerUnit: z.number().min(0).max(5).default(0.039),
     stripePercent: z.number().min(0).max(20),
     stripeFixed: z.number().min(0).max(5),
   }),
@@ -32,7 +34,7 @@ export type BillingConfig = z.infer<typeof BillingConfig>;
 export const DEFAULT_BILLING: BillingConfig = {
   creditCosts: { ...CREDIT_COST },
   costCeilings: { analyze: 0.3, analyze_only: 0.08, generate: 0.25, regenerate: 0.08, render: 0.02 },
-  prices: { computePerSecond: 0.00004, storageGbMonth: 0.021, egressGb: 0.09, downloadsPerVideo: 1, stripePercent: 2.9, stripeFixed: 0.3 },
+  prices: { computePerSecond: 0.00004, storageGbMonth: 0.021, egressGb: 0.09, downloadsPerVideo: 1, imagePerUnit: 0.039, stripePercent: 2.9, stripeFixed: 0.3 },
   targets: { targetMargin: 0.8, minMargin: 0.7 },
 };
 

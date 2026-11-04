@@ -9,6 +9,7 @@ import type { Scene, ScenePlan } from "@/lib/creative/scene-plan";
 import { AnimatedText } from "./motion";
 import { CtaButton, FeatureCallout, GeometricSweep, IconPop, LogoReveal, ProductWindow, ShapeBurst, StatCounter } from "./elements";
 import { buildTimeline, inkOn, musicVolume, resolveColor } from "./timeline";
+import { CameraRig, Confetti, Marquee, MotionGraphics, Orbit, PhotoBackdrop, PhotoMedia, Sparkles } from "./graphics";
 import { DEFAULT_MUSIC_VOLUME, MUSIC_GAIN, SFX, musicPath, sfxPath, soundForTransition, trackById, transitionPath } from "./music";
 
 export interface AdVideoProps extends Record<string, unknown> {
@@ -99,23 +100,50 @@ function Background({ scene, plan, unit }: { scene: Scene; plan: ScenePlan; unit
 }
 
 /* ---------- one scene ---------- */
-export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: { scene: Scene; plan: ScenePlan; logoUrl?: string | null; productName?: string; screenshotUrl?: string | null }) {
+/**
+ * A scene is drawn in two layers with the same layout: the stage (background,
+ * motion graphics, photos, product window) moves with the camera, and the copy
+ * (headline, text, buttons) sits on top, steady and readable.
+ */
+export function SceneView({
+  scene,
+  plan,
+  logoUrl,
+  productName,
+  screenshotUrl,
+  sceneFrames = 90,
+}: {
+  scene: Scene;
+  plan: ScenePlan;
+  logoUrl?: string | null;
+  productName?: string;
+  screenshotUrl?: string | null;
+  sceneFrames?: number;
+}) {
   const { width, height } = useVideoConfig();
   const frame = useCurrentFrame();
   const unit = Math.min(width, height) / 100;
   const portrait = height > width * 1.1;
   const bg = resolveColor(scene.background.color, plan);
-  const ink = inkOn(bg);
   const types = new Set(scene.visualElements.map((v) => v.type));
+  const photos = scene.visualElements.filter((v) => v.type === "photo" && v.src);
+  const backdrop = photos.find((p) => p.photoStyle === "full");
+  const framedPhoto = photos.find((p) => p.photoStyle !== "full");
   const hasProduct = types.has("screenshot_reveal") || types.has("product_recording") || scene.productFootage.required;
+  const hasMedia = hasProduct || !!framedPhoto;
+  const ink = inkOn(bg);
   const isCta = scene.purpose === "cta" || types.has("cta_end_card");
   const showLogo = types.has("logo_reveal") || isCta;
-  const headlineSize = unit * (scene.headline.length > 34 ? 6.4 : scene.headline.length > 20 ? 8 : 9.6) * (hasProduct && !portrait ? 0.82 : 1);
+  const headlineSize = unit * (scene.headline.length > 34 ? 6.4 : scene.headline.length > 20 ? 8 : 9.6) * (hasMedia && !portrait ? 0.82 : 1);
   const stat = scene.visualElements.find((v) => v.type === "stat_counter");
   const callouts = scene.visualElements.filter((v) => v.type === "feature_callout" && v.text);
   const icons = scene.visualElements.filter((v) => v.type === "icon_animation");
+  const marquee = scene.visualElements.find((v) => v.type === "marquee");
   const subOpacity = interpolate(frame, [12, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const textAlign = hasProduct && !portrait ? "left" : "center";
+  const textAlign = hasMedia && !portrait ? "left" : "center";
+  const progress = Math.min(1, frame / Math.max(1, sceneFrames - 1));
+  const splitRight = scene.background.type === "split" && !portrait && !hasMedia;
+  const splitBottom = scene.background.type === "split" && portrait && !hasMedia;
 
   const textBlock = (
     <div style={{ display: "flex", flexDirection: "column", alignItems: textAlign === "left" ? "flex-start" : "center", gap: unit * 2.4, textAlign }}>
@@ -130,7 +158,7 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
           text={scene.headline}
           anim={scene.animation}
           accent={plan.palette.accent === bg ? plan.palette.primary : plan.palette.accent}
-          style={{ fontFamily: `"${plan.fonts.heading}", "Archivo Variable", system-ui, sans-serif`, fontWeight: 700, fontSize: headlineSize, lineHeight: 0.98, letterSpacing: "-0.035em", color: ink, maxWidth: hasProduct && !portrait ? "100%" : "88%" }}
+          style={{ fontFamily: `"${plan.fonts.heading}", "Archivo Variable", system-ui, sans-serif`, fontWeight: 700, fontSize: headlineSize, lineHeight: 0.98, letterSpacing: "-0.035em", color: ink, maxWidth: hasMedia && !portrait ? "100%" : "88%" }}
         />
       )}
       {scene.supportingText && (
@@ -145,30 +173,57 @@ export function SceneView({ scene, plan, logoUrl, productName, screenshotUrl }: 
     </div>
   );
 
-  return (
-    <AbsoluteFill>
-      <Background scene={scene} plan={plan} unit={unit} />
-      {(types.has("shape_burst") && scene.background.type !== "shape_field") && <ShapeBurst plan={plan} unit={unit} />}
-      {types.has("geometric_sweep") && <GeometricSweep plan={plan} unit={unit} />}
-      {hasProduct ? (
-        portrait ? (
-          <AbsoluteFill style={{ padding: unit * 7, display: "flex", flexDirection: "column", gap: unit * 6 }}>
-            <div style={{ flex: "0 0 auto", paddingTop: unit * 6 }}>{textBlock}</div>
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <ProductWindow plan={plan} unit={unit} recording={types.has("product_recording")} image={screenshotUrl} label={scene.cta?.text} />
-            </div>
-          </AbsoluteFill>
-        ) : (
-          <AbsoluteFill style={{ padding: unit * 8, display: "grid", gridTemplateColumns: "44% 1fr", gap: unit * 6, alignItems: "center" }}>
-            {textBlock}
-            <div style={{ height: "78%" }}>
-              <ProductWindow plan={plan} unit={unit} recording={types.has("product_recording")} image={screenshotUrl} label={scene.cta?.text} />
-            </div>
-          </AbsoluteFill>
-        )
+  const media = hasProduct ? (
+    <ProductWindow plan={plan} unit={unit} recording={types.has("product_recording")} image={screenshotUrl} label={scene.cta?.text} />
+  ) : framedPhoto ? (
+    <PhotoMedia el={framedPhoto} unit={unit} progress={progress} plan={plan} />
+  ) : null;
+
+  // With a product window or framed photo, the camera zooms inside that frame
+  // (e.g. into the "Add to cart" button); otherwise it moves the whole stage.
+  const stageCamera = hasMedia ? ({ move: "drift", focus: { x: 0.5, y: 0.5 }, scale: 1.05 } as const) : scene.camera;
+
+  /** The shared layout, drawn once per layer with the other layer's part hidden. */
+  const layout = (layer: "stage" | "copy") => {
+    const text = <div style={{ visibility: layer === "copy" ? "visible" : "hidden" }}>{textBlock}</div>;
+    const slot = (node: React.ReactNode) => (
+      <div style={{ visibility: layer === "stage" ? "visible" : "hidden", position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: unit * 2 }}>
+        <CameraRig camera={scene.camera} sceneFrames={sceneFrames}>{node}</CameraRig>
+      </div>
+    );
+    if (hasMedia) {
+      return portrait ? (
+        <AbsoluteFill style={{ padding: unit * 7, display: "flex", flexDirection: "column", gap: unit * 6 }}>
+          <div style={{ flex: "0 0 auto", paddingTop: unit * 6 }}>{text}</div>
+          <div style={{ flex: 1, minHeight: 0 }}>{slot(media)}</div>
+        </AbsoluteFill>
       ) : (
-        <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", right: scene.background.type === "split" && !portrait ? "40%" : 0, bottom: scene.background.type === "split" && portrait ? "40%" : 0 }}>{textBlock}</AbsoluteFill>
-      )}
+        <AbsoluteFill style={{ padding: unit * 8, display: "grid", gridTemplateColumns: "44% 1fr", gap: unit * 6, alignItems: "center" }}>
+          {text}
+          <div style={{ height: "78%" }}>{slot(media)}</div>
+        </AbsoluteFill>
+      );
+    }
+    return layer === "copy" ? (
+      <AbsoluteFill style={{ padding: unit * 8, display: "flex", alignItems: "center", justifyContent: "center", right: splitRight ? "40%" : 0, bottom: splitBottom ? "40%" : 0 }}>{text}</AbsoluteFill>
+    ) : null;
+  };
+
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <CameraRig camera={stageCamera} sceneFrames={sceneFrames}>
+        <Background scene={scene} plan={plan} unit={unit} />
+        {backdrop && <PhotoBackdrop el={backdrop} bg={bg} progress={progress} />}
+        {(plan.graphics ?? "lively") !== "calm" || !backdrop ? <MotionGraphics scene={scene} plan={plan} unit={unit} bg={bg} /> : null}
+        {types.has("shape_burst") && scene.background.type !== "shape_field" && <ShapeBurst plan={plan} unit={unit} />}
+        {types.has("geometric_sweep") && <GeometricSweep plan={plan} unit={unit} />}
+        {types.has("orbit") && <Orbit plan={plan} unit={unit} />}
+        {types.has("confetti") && <Confetti plan={plan} unit={unit} seed={scene.id} />}
+        {layout("stage")}
+        {types.has("sparkles") && <Sparkles plan={plan} unit={unit} seed={scene.id} />}
+      </CameraRig>
+      {layout("copy")}
+      {marquee && <Marquee text={marquee.text || scene.headline} plan={plan} unit={unit} bg={bg} />}
     </AbsoluteFill>
   );
 }
@@ -231,7 +286,7 @@ export function AdVideo({ plan, logoUrl, productName, screenshotUrl }: AdVideoPr
           const t = timeline.scenes[i];
           const items = [
             <TransitionSeries.Sequence key={`s-${scene.id}`} durationInFrames={t.durationInFrames}>
-              <SceneView scene={scene} plan={plan} logoUrl={logoUrl} productName={productName} screenshotUrl={screenshotUrl} />
+              <SceneView scene={scene} plan={plan} logoUrl={logoUrl} productName={productName} screenshotUrl={screenshotUrl} sceneFrames={t.durationInFrames} />
             </TransitionSeries.Sequence>,
           ];
           if (t.transitionFrames > 0 && i < plan.scenes.length - 1) {
